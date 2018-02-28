@@ -1,4 +1,4 @@
-= Tracing and Observability with Spring Cloud Sleuth + Grafana
+= Spring Tracing with Zipkin Brave and Spring Cloud Sleuth
 Mario Gray <mgray@pivotal.io>
 :Author Initials: MVG
 :toc:
