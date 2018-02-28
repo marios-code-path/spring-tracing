@@ -1,0 +1,78 @@
+= Tracing and Observability with Spring Cloud Sleuth + Grafana
+Mario Gray <mgray@pivotal.io>
+:Author Initials: MVG
+:toc:
+:icons:
+:numbered:
+:website: https://cloud.spring.io/spring-cloud-sleuth/
+
+== Motivation
+The purpose of this example is to explore setting up, and deploying
+tracable systems using Spring Boot and ... 
+
+To highlight the core proposition of distributed tracing, lets check out
+a simple example of an HTTP/REST service as invoked from an `httpClient`.
+
+.. show code for our http server and client..
+
+When this application requests content, the SLF4J framework invokes 
+MDC state management.  It also commutes `trace` and `spans` across service
+ - remote or otherwise- calls.
+
+.. show example request with spans ..
+
+
+
+
+the Managed Diagnostic Context can update the state of current execution
+context. This allows for inherent program code tracing without even knowing
+the origin or destination of such service. In this article I will overview 
+and surface an example of spring-cloud-sleuth - a distributed tracing 
+module for spring-cloud.
+
+=== Take a closer look
+
+MDC (Managed Diagnostic Context) is the abstraction (describe) thats responsible for
+application facing tracing data. The MDC itself is bound to a ThreadLocal entry
+and exposes a Map-like interface which applications will use to store trace data.
+
+Spring supports propagation of the SLF4J Mapped Diagnostic Context (MDC) through Akka actors,
+ Akka HTTP requests, and Scala Futures. When an MDC is set on the current thread, 
+ this will be copied with any subsequent message sends, HTTP requests, or asynchronous
+  callbacks. The MDC will be reinstated when the receiving actor processes the 
+  message, the server receives the request, the client receives the response, 
+  or when the callback runs. For example, this allows a request or transaction ID to 
+  be set and to appear in all connected log messages.
+
+is used to find out when a new thread of context - add thread context too - is 
+activated. We use MDC through the SLF4J-mdc moduyle
+Break down what MDC does
+How does SLF4j affect MDC
+how Spring-Cloud-Sleuth Interacts with MDC/slf4j. 
+how SCS interacts with any other tracing framework (is possible)
+Describe output and destination/configuration of zipkin.  throw in 
+dapper,HTrace or other popular tracing too.
+
+=== Observing the cluster
+ 
+How observability affets management, allows us to put performance 
+into context.  Describe how to get trace data into Grafana
+
+* Setup the environment using minikube
+
+=== What's in the example
+Ideation: Expose GET http://reverse 
+                -> microservice (reverse.apply)
+                    -> microservice (delay.apply)
+          Expose POST http://names
+                -> microservice (store.apply)
+                    -> microservice (delay.apply)
+          Expose GET http://names
+                -> microservice (get.apply)
+                    -> microservice (delay.apply)
+
+            HTTP 400 - Error state on numbers. 
+            HTTP 500 - larger than 80 characters 500's the service
+
+Test Suite ( functional ) 
+
