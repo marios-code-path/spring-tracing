@@ -8,16 +8,52 @@ Mario Gray <mgray@pivotal.io>
 
 == Motivation
 This example will demonstrate applying tracing capability to an existing
-Spring or Spring Boot application.  We will begin by seting up a standard Spring MVC
+Spring or Spring Boot application.  We will begin by seting up an Spring MVC
 Restful Json service, and then by adding the necessary pieces for leveraging
 trace data and then shiping that to a Zipkin (Brave) server. Ultimately you could
 ship to any service, yet this example is simply writing logs, and shipipng metrics
 to Zipkin.
 
+In this example, we will demonstrate how to stand up a simple RESTful web service
+and, then - incrementaly add tracing capabilities to discover how we can break our
+applications into descrete tracing priorities.  This example assumes you have an 
+understainging of data metric and JVM tracing methods.  Today we find some operationly
+production ready key assets to manage withing the organization.  Tracing your 
+service codes involves a relatively complex process in which each new IO-bound
+operation gets tagged with a 'spanId'.  Thus, each 'trace' contains the necessary
+tree like structure to map out it's span positions in terms of service usage, 
+service call order and any other key data the developer wants to emit.  
+== Assembly points
+
+
+Lets dive into some key assembly points.  
+
+ 1 - Maintain some semblance of inter-process communication 
+	 and apply to business Logic.
+     HTTP Rest call 
+	 	This demo will expose 2 Restful endpoints 
+		One will call the other to demonstrate trace propigation across HTTP 
+	 Finagle RPC call
+	 	This demo will expose 2 finagle services
+		"" trace propigation via Finagle (mysql)
+	 WebSocket stream
+	 	This demo will expose a socket service which receives
+		it's stream via kafka
+ 	
+ 2 - Apply tracing logic
+	- Starting with SLF4j MDC tracing
+	- Adds Brave tracing without instrumentation
+	- Adds Brave trace with trace shipping to zipkin
+	- further trace shipping options
+
+ 3 - Stand up tracing aggregator (Brave, Actuator?)
+ 
+ 4 - Bring it together using Spring-cloud-sleuth
+
 To start, you should have an existing application that includes Web, Lombok, and
-JPA/H2 for persistence. To follow along with code, visit start.spring.io, or perhaps
-download the sourcecode to this example. We will then add some depenencies for enabling
-Brave tracing to our services:
+JPA/H2 for persistence. Hit http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[start.spring.io] link
+to download the base project. Here You will find the basic project to build with, we'll
+start with standing up a REST controller.
 
 .Pom that enables tracing
 [source,xml]
@@ -83,26 +119,4 @@ If you are using log4j, then you'll want to add these artifacts:
 		</dependency>
 ----
 
-=== Configuration the Spring application
-
-To get starte
-.. trace and span ..
-
-
-
-=== What's in the example
-Ideation: Expose GET http://reverse 
-                -> microservice (reverse.apply)
-                    -> microservice (delay.apply)
-          Expose POST http://names
-                -> microservice (store.apply)
-                    -> microservice (delay.apply)
-          Expose GET http://names
-                -> microservice (get.apply)
-                    -> microservice (delay.apply)
-
-            HTTP 400 - Error state on numbers. 
-            HTTP 500 - larger than 80 characters 500's the service
-
-Test Suite ( functional ) 
-
+== Configure the application for brave tracing
