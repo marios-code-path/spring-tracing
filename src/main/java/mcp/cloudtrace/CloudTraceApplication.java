@@ -31,4 +31,3 @@ public class CloudTraceApplication {
         SpringApplication.run(CloudTraceApplication.class, args);
     }
 }
-

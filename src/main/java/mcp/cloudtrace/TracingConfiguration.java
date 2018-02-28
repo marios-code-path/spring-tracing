@@ -34,7 +34,6 @@ import java.util.List;
 // Importing these classes is effectively the same as declaring bean methods
 @Import({TracingClientHttpRequestInterceptor.class, TracingHandlerInterceptor.class})
 class TracingConfiguration extends WebMvcConfigurerAdapter {
-
     @Value("${mcp.zipkin.url}")
     String zipkinSenderUrl;
 
@@ -55,10 +54,11 @@ class TracingConfiguration extends WebMvcConfigurerAdapter {
     }
 
     /**
+     * Put all of the application-specific tracing priorities in this method
      * Controls aspects of tracing such as the name that shows up in the UI
      */
     @Bean
-    Tracing tracing(@Value("${mcp:cloud-trace}") String serviceName) {
+    Tracing tracing(@Value("${mcp:spring-tracing}") String serviceName) {
         return Tracing.newBuilder()
                 .sampler(Sampler.ALWAYS_SAMPLE)
                 .localServiceName(serviceName)

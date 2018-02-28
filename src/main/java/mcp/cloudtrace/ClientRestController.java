@@ -8,13 +8,13 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
-class SampleRestController {
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SampleRestController.class);
+class ClientRestController {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ClientRestController.class);
 
     private final ClientRepository clientRepo;
     private final RestTemplate restTemplate;
 
-    public SampleRestController(ClientRepository ds,
+    public ClientRestController(ClientRepository ds,
                                 RestTemplate rt) {
         this.clientRepo = ds;
         this.restTemplate = rt;
@@ -35,4 +35,3 @@ class SampleRestController {
 
     }
 }
-
