@@ -19,7 +19,6 @@ public class CloudTraceApplicationTest {
 
 	@Test
 	public void frontendShouldInvokeBackend() throws Exception {
-
 		String clientId = "android";
 		RequestEntity<Void> requestEntity = RequestEntity.get(URI.create("http://localhost:8080/frontend"))
 				.header("client-id", clientId)
@@ -28,7 +27,5 @@ public class CloudTraceApplicationTest {
 		String msg = responseEntity.getBody();
 		Assertions.assertThat(msg).isNotNull();
 		Assertions.assertThat(msg).contains("Hello, " + clientId);
-
 	}
-
 }
