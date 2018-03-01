@@ -9,10 +9,10 @@ import brave.sampler.Sampler;
 import brave.spring.web.TracingClientHttpRequestInterceptor;
 import brave.spring.webmvc.TracingHandlerInterceptor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateCustomizer;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
@@ -29,18 +29,15 @@ import zipkin2.reporter.okhttp3.OkHttpSender;
 class TracingConfiguration {
 
 	@Bean
+	RestTemplate restTemplate(HttpTracing tracing) {
+		return new RestTemplateBuilder()
+				.interceptors(TracingClientHttpRequestInterceptor.create(tracing))
+				.build();
+	}
+
+	@Bean
 	HandlerInterceptor serverInterceptor(HttpTracing tracing) {
 		return TracingHandlerInterceptor.create(tracing);
-	}
-
-	@Bean
-	ClientHttpRequestInterceptor httpRequestInterceptor(HttpTracing tracing) {
-		return TracingClientHttpRequestInterceptor.create(tracing);
-	}
-
-	@Bean
-	RestTemplateCustomizer clientInterceptor(ClientHttpRequestInterceptor c) {
-		return restTemplate -> restTemplate.getInterceptors().add(c);
 	}
 
 	/**
@@ -100,6 +97,4 @@ class TracingConfiguration {
 			registry.addInterceptor(this.serverInterceptor);
 		}
 	}
-
-
 }
