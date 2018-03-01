@@ -1,49 +1,34 @@
 package mcp.cloudtrace;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.Arrays;
+import java.net.URI;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-@AutoConfigureMockMvc
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = CloudTraceApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@SpringBootTest(classes = CloudTraceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class CloudTraceApplicationTest {
-    @Autowired
-    private MockMvc mockMvc;
 
-    @MockBean
-    private ClientRepository deviceRepository;
+	private RestTemplate restTemplate = new RestTemplate();
 
-    @Test
-    public void testShouldFindAllDevices() throws Exception {
-        Mockito.when(deviceRepository.findAll())
-                .thenReturn(
-                        Arrays.asList(
-                                new Client(1L, "IOS"),
-                                new Client(2L, "Android"),
-                                new Client(3L, "WEB")
+	@Test
+	public void frontendShouldInvokeBackend() throws Exception {
 
-                        )
-                );
+		String clientId = "android";
+		RequestEntity<Void> requestEntity = RequestEntity.get(URI.create("http://localhost:8080/frontend"))
+				.header("client-id", clientId)
+				.build();
+		ResponseEntity<String> responseEntity = restTemplate.exchange(requestEntity, String.class);
+		String msg = responseEntity.getBody();
+		Assertions.assertThat(msg).isNotNull();
+		Assertions.assertThat(msg).contains("Hello, " + clientId);
 
-        mockMvc.perform(get("/clients")
-                .header("client-id", "Android"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
-                .andExpect(jsonPath("@.[0].id").isNotEmpty());
-    }
+	}
 
 }

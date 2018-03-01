@@ -13,7 +13,6 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import zipkin2.Span;
@@ -33,11 +32,6 @@ class TracingConfiguration {
 		return new RestTemplateBuilder()
 				.interceptors(TracingClientHttpRequestInterceptor.create(tracing))
 				.build();
-	}
-
-	@Bean
-	HandlerInterceptor serverInterceptor(HttpTracing tracing) {
-		return TracingHandlerInterceptor.create(tracing);
 	}
 
 	/**
@@ -63,7 +57,8 @@ class TracingConfiguration {
 	@Bean
 	Tracing tracing(@Value("${mcp:spring-tracing}") String serviceName,
 	                AsyncReporter<Span> spanAsyncReporter) {
-		return Tracing.newBuilder()
+		return Tracing
+				.newBuilder()
 				.sampler(Sampler.ALWAYS_SAMPLE)
 				.localServiceName(serviceName)
 				.propagationFactory(ExtraFieldPropagation
@@ -82,19 +77,18 @@ class TracingConfiguration {
 		return HttpTracing.create(tracing);
 	}
 
-
 	@Configuration
-	public static class MyWebConfig extends WebMvcConfigurerAdapter {
+	public static class WebTracingConfiguration extends WebMvcConfigurerAdapter {
 
-		private final HandlerInterceptor serverInterceptor;
+		private final HttpTracing tracing;
 
-		public MyWebConfig(HandlerInterceptor serverInterceptor) {
-			this.serverInterceptor = serverInterceptor;
+		public WebTracingConfiguration(HttpTracing tracing) {
+			this.tracing = tracing;
 		}
 
 		@Override
 		public void addInterceptors(InterceptorRegistry registry) {
-			registry.addInterceptor(this.serverInterceptor);
+			registry.addInterceptor(TracingHandlerInterceptor.create(tracing));
 		}
 	}
 }
