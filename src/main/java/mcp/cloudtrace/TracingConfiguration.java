@@ -80,15 +80,19 @@ class TracingConfiguration {
 	@Configuration
 	public static class WebTracingConfiguration extends WebMvcConfigurerAdapter {
 
-		private final HttpTracing tracing;
-
-		public WebTracingConfiguration(HttpTracing tracing) {
-			this.tracing = tracing;
-		}
+//		private final HttpTracing tracing;
+//
+//		public WebTracingConfiguration(HttpTracing tracing) {
+//			this.tracing = tracing;
+//		}
 
 		@Override
 		public void addInterceptors(InterceptorRegistry registry) {
-			registry.addInterceptor(TracingHandlerInterceptor.create(tracing));
+			registry.addInterceptor(TracingHandlerInterceptor.create(
+					HttpTracing.create(Tracing
+					.newBuilder()
+					.currentTraceContext(MDCCurrentTraceContext.create())
+					.build())));
 		}
 	}
 }

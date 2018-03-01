@@ -1,16 +1,14 @@
 package mcp.cloudtrace;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletRequest;
 
-@Slf4j
 @RestController
 class ClientRestController {
-
+	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ClientRestController.class);
 	private final RestTemplate restTemplate;
 
 	public ClientRestController(RestTemplate rt) {

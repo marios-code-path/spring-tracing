@@ -8,11 +8,11 @@ Mario Gray <mgray@pivotal.io>
 
 == Motivation
 This example will demonstrate applying tracing capability to an existing
-Spring or Spring Boot application.  We will begin by seting up an Spring MVC
-Restful Json service, and then by adding the necessary pieces for leveraging
+Spring or Spring Boot application.  We will begin by standing up an Spring MVC
+Restful service, and then by adding the necessary pieces for leveraging
 trace data and then shiping that to a Zipkin (Brave) server. Ultimately you could
-ship to any service, yet this example is simply writing logs, and shipipng metrics
-to Zipkin.
+ship to any service, yet this example will demonstrate trace propagation
+across service requests Zipkin.
 
 In this example, we will demonstrate how to stand up a simple RESTful web service
 and, then - incrementaly add tracing capabilities to discover how we can break our
@@ -23,11 +23,101 @@ service codes involves a relatively complex process in which each new IO-bound
 operation gets tagged with a 'spanId'.  Thus, each 'trace' contains the necessary
 tree like structure to map out it's span positions in terms of service usage, 
 service call order and any other key data the developer wants to emit.  
-== Assembly points
+
+== Examnple Project Initialize
+To start, you should have an existing application that includes Web, Lombok, and
+JPA/H2 for persistence. Hit http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[start.spring.io] link
+to download the base project. We'll start with standing up a REST controller.
+
+.SimpleController
+[source,java]
+---
+@RestController
+class ClientRestController {
+	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ClientRestController.class);
+	private final RestTemplate restTemplate;
+
+	public ClientRestController(RestTemplate rt) {
+		this.restTemplate = rt;
+	}
+
+	@GetMapping("/backend")
+	public String deviceNames(HttpServletRequest req) {
+		String clientId = req.getHeader("client-id");
+		log.info("clientId=" + clientId);
+		return "Hello, " + clientId;
+	}
+
+	@GetMapping("/frontend")
+	public String callBackend() {
+		return restTemplate.getForObject("http://localhost:8080/backend", String.class);
+	}
+}
+---
+
+Then setup the logging properties:
+
+.LoggingProperties
+[source,script]
+---
+logging.pattern.level=%d{ABSOLUTE} [%X{traceId}/%X{spanId}] %-5p [%t] %C{2} - %m%n
+logging.level.root=off
+logging.level.mcp.cloudtrace=info
+spring.application.name=spring-tracing
+---
+
+Startup the server by running `mvn spring-boot:run` at the command line.  We can 
+test that the endpoint is up by accessing it's `/frontend` path. Take a look at 
+the logs, and you should find some pretty vanilla output:
+
+.Boot_app_output
+[source,text]
+---
+...
+2018-02-28 18:25:48.531 2018-02-28 18:25:48,531 [/] INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=null
+ 30145 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=null
+...
+---
+
+Notice that `%TraceId/%SpanId` are not being filled in yet.  Lets fix that by
+registering an `org.springframework.web.servlet.HandlerInterceptor` specific to
+zipkin. In this case we will use the `brave.spring.webmvc.TracingHandlerInterceptor`
+that adds a zipkin span to every request.
+Of important note is the use of a Trace Context.  While you have other options, 
+this example uses SLF4j - which itself utilizes Managed Diagnostic Context(MDC). 
+Thus, `brave.context.slf4j.MDCCurrentTraceContext` is a ready-made Trace Context that 
+will be used to expose span data to slf4j as logging properties: 
+`traceId, spanId, parentId`.
+
+.Configure_zipkin_interceptor
+[source,java]
+---
+	@Configureation
+	public class WebTracingConfiguration extends WebMvcConfigurerAdapter {
+		@Override
+		public void addInterceptors(InterceptorRegistry registry) {
+			registry.addInterceptor(TracingHandlerInterceptor.create(
+					HttpTracing.create(Tracing
+					.newBuilder()
+					.currentTraceContext(MDCCurrentTraceContext.create())
+					.build())));
+		}
+	}
+---
+
+So now, we can restart our service, and invoke the `/frontend` and observe 
+the output in logs:
+
+.Invokation_with_span
+[source,text]
+---
+2018-02-28 18:49:51.200 2018-02-28 18:49:51,200 [6b5e99f057da5abd/1239a4f2e354ecdf] INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=null
+ 37142 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=null
+---
 
 
-Lets dive into some key assembly points.  
 
+SLF4j 
  1 - Maintain some semblance of inter-process communication 
 	 and apply to business Logic.
      HTTP Rest call 
@@ -50,10 +140,6 @@ Lets dive into some key assembly points.
  
  4 - Bring it together using Spring-cloud-sleuth
 
-To start, you should have an existing application that includes Web, Lombok, and
-JPA/H2 for persistence. Hit http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[start.spring.io] link
-to download the base project. Here You will find the basic project to build with, we'll
-start with standing up a REST controller.
 
 .Pom that enables tracing
 [source,xml]
