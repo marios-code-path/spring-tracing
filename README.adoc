@@ -14,24 +14,46 @@ trace data and then shiping that to a Zipkin (Brave) server. Ultimately you coul
 ship to any service, yet this example will demonstrate trace propagation
 across service requests Zipkin.
 
-In this example, we will demonstrate how to stand up a simple RESTful web service
-and, then - incrementaly add tracing capabilities to discover how we can break our
-applications into descrete tracing priorities.  This example assumes you have an 
-understainging of data metric and JVM tracing methods.  Today we find some operationly
-production ready key assets to manage withing the organization.  Tracing your 
-service codes involves a relatively complex process in which each new IO-bound
-operation gets tagged with a 'spanId'.  Thus, each 'trace' contains the necessary
-tree like structure to map out it's span positions in terms of service usage, 
-service call order and any other key data the developer wants to emit.  
+In this example, we will demonstrate how to stand up an Spring application with
+various degrees of tracing.  It will start without tracing, then incrementaly
+add our tracing concerns. First lets take a look at some common trace nomenclature:
 
+What is:
+Trace data is composed of a parent:child tree structure.  Where a root node represents
+the `trace` or overall journey, and each `span` represents an individual hop along the
+route. Our application will demonstrate this kind of relationship:
+
+    client -> </frontent> -> </backend> -> </backend2>
+	  			AAA 		   AAA:BBB		 BBB:CCC
+				  \
+				    BBB
+					 \
+				       CCC
+ 
 == Examnple Project Initialize
 To start, you should have an existing application that includes Web, Lombok, and
 JPA/H2 for persistence. Hit http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[start.spring.io] link
-to download the base project. We'll start with standing up a REST controller.
+to download the base project. Find your favorite editor, and start with standing up a REST
+controller.
 
 .SimpleController
 [source,java]
 ---
+@SpringBootApplication
+public class ClientTraceApplication {
+	public static void main(String[] args) {
+		SpringApplication.run(ClientTraceApplication.class, args);
+	}
+}
+
+@Configuration
+class TracingConfiguration {
+	@Bean
+	RestTemplate restTemplate() {
+		return new RestTemplate(); 
+	}
+}
+
 @RestController
 class ClientRestController {
 	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ClientRestController.class);
@@ -66,9 +88,10 @@ logging.level.mcp.cloudtrace=info
 spring.application.name=spring-tracing
 ---
 
-Startup the server by running `mvn spring-boot:run` at the command line.  We can 
-test that the endpoint is up by accessing it's `/frontend` path. Take a look at 
-the logs, and you should find some pretty vanilla output:
+Startup the server by running `mvn spring-boot:run` at the command line. And in another
+terminal window (or tab), we can validate access to the endpoints.
+Try curling `localhost:8080/frontend` first. Then switch to your server terminal and
+observe the logs:
 
 .Boot_app_output
 [source,text]
@@ -80,14 +103,9 @@ the logs, and you should find some pretty vanilla output:
 ---
 
 Notice that `%TraceId/%SpanId` are not being filled in yet.  Lets fix that by
-registering an `org.springframework.web.servlet.HandlerInterceptor` specific to
-zipkin. In this case we will use the `brave.spring.webmvc.TracingHandlerInterceptor`
-that adds a zipkin span to every request.
-Of important note is the use of a Trace Context.  While you have other options, 
-this example uses SLF4j - which itself utilizes Managed Diagnostic Context(MDC). 
-Thus, `brave.context.slf4j.MDCCurrentTraceContext` is a ready-made Trace Context that 
-will be used to expose span data to slf4j as logging properties: 
-`traceId, spanId, parentId`.
+registering an `org.springframework.web.servlet.HandlerInterceptor` that exhibits
+trace instrumentation. In this case we will use the provided `brave.spring.webmvc.TracingHandlerInterceptor`
+class for tracing Spring WEB/MVC/REST endpoints.
 
 .Configure_zipkin_interceptor
 [source,java]
@@ -105,7 +123,15 @@ will be used to expose span data to slf4j as logging properties:
 	}
 ---
 
-So now, we can restart our service, and invoke the `/frontend` and observe 
+Of important note is the use of a Trace Context.  While you have other options, 
+this example uses SLF4j - which uses it's own version of Managed Diagnostic Context (MDC). 
+Thus, `brave.context.slf4j.MDCCurrentTraceContext` is a ready-made Trace Context that 
+will expose current trace and span ID's to slf4j as logging properties with the given
+names: `traceId, spanId, parentId`. If you are using log4j instead, then a provided
+class `brave.context.log4j2.ThreadContextCurrentTraceContext` will do the same for
+log4j's ThreadContext.
+
+So now, we can restart our service then invoke the `/frontend` and observe 
 the output in logs:
 
 .Invokation_with_span
@@ -114,6 +140,7 @@ the output in logs:
 2018-02-28 18:49:51.200 2018-02-28 18:49:51,200 [6b5e99f057da5abd/1239a4f2e354ecdf] INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=null
  37142 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=null
 ---
+
 
 
 
