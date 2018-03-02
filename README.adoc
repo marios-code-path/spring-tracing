@@ -30,7 +30,7 @@ route. Our application will demonstrate this kind of relationship:
 					 \
 				       CCC
  
-== Examnple Project Initialize
+== Starting up the app
 To start, you should have an existing application that includes Web, Lombok, and
 JPA/H2 for persistence. Hit http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[start.spring.io] link
 to download the base project. Find your favorite editor, and start with standing up a REST
@@ -102,6 +102,7 @@ observe the logs:
 ...
 ----
 
+= Adding Trace/Span to the service
 Notice that `%TraceId/%SpanId` are not being filled in yet.  Lets fix that by
 registering an `org.springframework.web.servlet.HandlerInterceptor` that exhibits
 trace instrumentation. Use the provided `brave.spring.webmvc.TracingHandlerInterceptor`
@@ -146,6 +147,7 @@ the output in logs:
  37142 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=null
 ----
 
+== Tracing across service boundaries
 Now we can observe trace/span state, but what about request-side tracing?  How can
 we commute the 'client-id' header to downstream requests? Logging trace/span is not
 enough if we cannot correlate them. To do this, we will add https://github.com/openzipkin/b3-propagation[brave B3-propigation]
@@ -188,15 +190,18 @@ In order to apply tracing concerns to our `restTemplate` we must provide -like t
 setup- an `org.springframework.http.client.ClientHttpRequestInterceptor` which does the 
 client-side tracing work.
 
-Now, when we call our endpoint, we should see a traceId, spanId, and our `client-id`
-as it would have commuted across the entire request chain.
-
 .output
 [source,text]
 ----
 2018-03-02 01:13:25.017 2018-03-02 01:13:25,017 [c0d24dc6b7793eb7/738d09ca4e3dd91e]  INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=mario-id
  49687 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=mario-id
 ----
+
+Now, when we call our endpoint, we should see a traceId, spanId, and our `client-id`
+as it would have commuted across the entire request chain.
+
+== Ship traces to somewhere
+
 
 SLF4j 
  1 - Maintain some semblance of inter-process communication 
