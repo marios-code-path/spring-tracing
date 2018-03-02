@@ -211,6 +211,12 @@ Now, when we call our endpoint, we should see a traceId, spanId, and our `client
 as it would have commuted across the entire request chain.
 
 == Shipping traces to somewhere
+Usually you will want to send your trace logs to an aggregation server for monitoring.
+
+
+== Another fork in the road: Sleuth
+In the next article, we will solve the same problems using Sleuth - an all-in-One
+ready made distribution that binds spring with zipkin tracing properties.
 
 
 SLF4j 
