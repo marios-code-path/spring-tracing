@@ -102,7 +102,7 @@ observe the logs:
 ...
 ----
 
-= Adding Trace/Span to the service
+== Adding Trace/Span to the service
 Notice that `%TraceId/%SpanId` are not being filled in yet.  Lets fix that by
 registering an `org.springframework.web.servlet.HandlerInterceptor` that exhibits
 trace instrumentation. Use the provided `brave.spring.webmvc.TracingHandlerInterceptor`
