@@ -15,21 +15,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-import zipkin2.Span;
-import zipkin2.reporter.AsyncReporter;
-import zipkin2.reporter.Sender;
 
 //@Configuration
 public class TracePropagationConfiguration {
-
-    /**
-     * Configuration for how to buffer spans into messages for Zipkin
-     */
-    @Bean
-    AsyncReporter<Span> spanReporter(Sender sender) {
-
-        return AsyncReporter.create(sender);
-    }
 
     @Bean
     RestTemplate restTemplate(HttpTracing tracing) {

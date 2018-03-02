@@ -8,7 +8,6 @@ import brave.propagation.ExtraFieldPropagation;
 import brave.sampler.Sampler;
 import brave.spring.web.TracingClientHttpRequestInterceptor;
 import brave.spring.webmvc.TracingHandlerInterceptor;
-import mcp.cloudtrace.config.TracePropagationConfiguration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -19,20 +18,23 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import zipkin2.Span;
 import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.Sender;
-import zipkin2.reporter.okhttp3.OkHttpSender;
+import zipkin2.reporter.amqp.RabbitMQSender;
 
-/**
- * This adds tracing configuration to any web mvc controllers or rest template clients. This should
- * be configured last.
- */
-//@Configuration
-class TracingShipToZipkinConfiguration {
+@Configuration
+public class TracingShipToRabbitConfiguration {
     /**
-     * Configuration for how to send spans to Zipkin
+     * Configuration for how to send spans to RabbitMQ
      */
     @Bean
-    Sender sender(@Value("${mcp.zipkin.url}") String zipkinSenderUrl) {
-        return OkHttpSender.create(zipkinSenderUrl);
+    Sender sender(@Value("${mcp.rabbit.url}") String rabbitmqHostUrl,
+                  @Value("${mcp.rabbit.queue}") String zipkinQueue) {
+        RabbitMQSender sender;
+
+        sender = RabbitMQSender.newBuilder()
+                .queue(zipkinQueue)
+                .addresses(rabbitmqHostUrl).build();
+
+        return sender;
     }
 
 
@@ -44,6 +46,7 @@ class TracingShipToZipkinConfiguration {
 
         return AsyncReporter.create(sender);
     }
+
 
     @Bean
     RestTemplate restTemplate(HttpTracing tracing) {

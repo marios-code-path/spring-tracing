@@ -11,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 //@Configuration
-public class TraceServiceOnlyConfiguration {
+public class TracingServiceOnlyConfiguration {
     @Bean
     RestTemplate restTemplate() {
         return new RestTemplate();
