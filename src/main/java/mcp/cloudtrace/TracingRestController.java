@@ -16,14 +16,14 @@ class TracingRestController {
     }
 
     @GetMapping("/backend")
-    public String deviceNames(HttpServletRequest req) {
+    public String backend(HttpServletRequest req) {
         String clientId = req.getHeader("client-id");
         log.info("clientId=" + clientId);
         return "Hello, " + clientId;
     }
 
     @GetMapping("/frontend")
-    public String callBackend() {
+    public String frontend() {
         return restTemplate.getForObject("http://localhost:8080/backend", String.class);
     }
 }
