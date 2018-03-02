@@ -24,7 +24,7 @@ import zipkin2.reporter.okhttp3.OkHttpSender;
  * This adds tracing configuration to any web mvc controllers or rest template clients. This should
  * be configured last.
  */
-@Configuration
+//@Configuration
 class TracingConfiguration {
 
 	@Bean
@@ -80,19 +80,15 @@ class TracingConfiguration {
 	@Configuration
 	public static class WebTracingConfiguration extends WebMvcConfigurerAdapter {
 
-//		private final HttpTracing tracing;
-//
-//		public WebTracingConfiguration(HttpTracing tracing) {
-//			this.tracing = tracing;
-//		}
+		private final HttpTracing tracing;
+
+		public WebTracingConfiguration(HttpTracing tracing) {
+			this.tracing = tracing;
+		}
 
 		@Override
 		public void addInterceptors(InterceptorRegistry registry) {
-			registry.addInterceptor(TracingHandlerInterceptor.create(
-					HttpTracing.create(Tracing
-					.newBuilder()
-					.currentTraceContext(MDCCurrentTraceContext.create())
-					.build())));
+			registry.addInterceptor(TracingHandlerInterceptor.create(tracing));
 		}
 	}
 }

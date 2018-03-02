@@ -36,9 +36,9 @@ JPA/H2 for persistence. Hit http://start.spring.io/starter.zip?dependencies=web,
 to download the base project. Find your favorite editor, and start with standing up a REST
 controller.
 
-.SimpleController
+.TracedApplication
 [source,java]
----
+----
 @SpringBootApplication
 public class ClientTraceApplication {
 	public static void main(String[] args) {
@@ -75,74 +75,128 @@ class ClientRestController {
 		return restTemplate.getForObject("http://localhost:8080/backend", String.class);
 	}
 }
----
+----
 
 Then setup the logging properties:
 
 .LoggingProperties
 [source,script]
----
+----
 logging.pattern.level=%d{ABSOLUTE} [%X{traceId}/%X{spanId}] %-5p [%t] %C{2} - %m%n
 logging.level.root=off
 logging.level.mcp.cloudtrace=info
 spring.application.name=spring-tracing
----
+----
 
 Startup the server by running `mvn spring-boot:run` at the command line. And in another
 terminal window (or tab), we can validate access to the endpoints.
 Try curling `localhost:8080/frontend` first. Then switch to your server terminal and
 observe the logs:
 
-.Boot_app_output
+.Not_traced_output
 [source,text]
----
+----
 ...
 2018-02-28 18:25:48.531 2018-02-28 18:25:48,531 [/] INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=null
  30145 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=null
 ...
----
+----
 
 Notice that `%TraceId/%SpanId` are not being filled in yet.  Lets fix that by
 registering an `org.springframework.web.servlet.HandlerInterceptor` that exhibits
-trace instrumentation. In this case we will use the provided `brave.spring.webmvc.TracingHandlerInterceptor`
-class for tracing Spring WEB/MVC/REST endpoints.
+trace instrumentation. Use the provided `brave.spring.webmvc.TracingHandlerInterceptor`
+class for tracing Spring WEB/MVC/REST endpoints. To configure the interceptor, we 
+will need to customize Spring MVC using a `org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter` 
+(or alternately use `WebMvcConfigurer` when using Spring 5.0 or more).
 
-.Configure_zipkin_interceptor
+.Simple_HTTP_tracing
 [source,java]
----
-	@Configureation
-	public class WebTracingConfiguration extends WebMvcConfigurerAdapter {
-		@Override
-		public void addInterceptors(InterceptorRegistry registry) {
-			registry.addInterceptor(TracingHandlerInterceptor.create(
-					HttpTracing.create(Tracing
-					.newBuilder()
-					.currentTraceContext(MDCCurrentTraceContext.create())
-					.build())));
-		}
+----
+@Configuration
+public class WebTracingConfiguration extends WebMvcConfigurerAdapter {
+	@Override
+	public void addInterceptors(InterceptorRegistry registry) {
+		registry.addInterceptor(TracingHandlerInterceptor.create(
+				HttpTracing.create(Tracing
+				.newBuilder()
+				.currentTraceContext(MDCCurrentTraceContext.create())
+				.build())));
 	}
----
+}
+----
 
-Of important note is the use of a Trace Context.  While you have other options, 
-this example uses SLF4j - which uses it's own version of Managed Diagnostic Context (MDC). 
+The interceptor receives an HttpTracing object which has the job of activating/not a
+new trace, and handling any custom trace-scoped needs like propigation, and Trace 
+Context commuting.
+
+Because we are using SLF4j - that implements it's own version of Managed Diagnostic Context (MDC). 
 Thus, `brave.context.slf4j.MDCCurrentTraceContext` is a ready-made Trace Context that 
-will expose current trace and span ID's to slf4j as logging properties with the given
-names: `traceId, spanId, parentId`. If you are using log4j instead, then a provided
+will expose current trace and span ID's to SLF4j as logging properties with the given
+names: `traceId, spanId, parentId`. If you are using log4j2 instead, then a provided
 class `brave.context.log4j2.ThreadContextCurrentTraceContext` will do the same for
-log4j's ThreadContext.
+log4j2's ThreadContext.
 
 So now, we can restart our service then invoke the `/frontend` and observe 
 the output in logs:
 
 .Invokation_with_span
 [source,text]
----
+----
 2018-02-28 18:49:51.200 2018-02-28 18:49:51,200 [6b5e99f057da5abd/1239a4f2e354ecdf] INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=null
  37142 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=null
----
+----
 
+Now we can observe trace/span state, but what about request-side tracing?  How can
+we commute the 'client-id' header to downstream requests? Logging trace/span is not
+enough if we cannot correlate them. To do this, we will add https://github.com/openzipkin/b3-propagation[brave B3-propigation]
+(adds X-B3-*Id headers) to HTTP requests made by our `restTemplate` bean.
 
+We continue the code development by modifying our `WebTracingConfiguration` class
+to wire up an `HttpTracing` object that will propigate our `client-id` header
+across requests in the same trace. The full source to this configuration is in 
+`mcp.TracePropagationConfiguration`.  The salient bits are discussed below:
 
+.TracePropagationConfiguration
+[source, java]
+----
+    @Bean
+    RestTemplate restTemplate(HttpTracing tracing) {
+        return new RestTemplateBuilder()
+                .interceptors(TracingClientHttpRequestInterceptor.create(tracing))
+                .build();
+    }
+
+    @Bean
+    Tracing tracing(@Value("${mcp:spring-tracing}") String serviceName) {
+        return Tracing
+                .newBuilder()
+                .sampler(Sampler.ALWAYS_SAMPLE)
+                .localServiceName(serviceName)
+                .propagationFactory(ExtraFieldPropagation
+                        .newFactory(B3Propagation.FACTORY, "client-id"))
+                .currentTraceContext(MDCCurrentTraceContext.create())
+                .build();
+    }
+----
+
+By customizing our Tracing bean, we can tell brave that we want our `client-id` header
+propated across request/service boundries. Brave provides the `ExtraFieldPropagation` 
+class to support comprehensive use of these fields in an application-specific way.  Check the
+https://github.com/openzipkin/brave/blob/master/brave/src/main/java/brave/propagation/ExtraFieldPropagation.java[documentation] for further info.
+
+In order to apply tracing concerns to our `restTemplate` we must provide -like the server 
+setup- an `org.springframework.http.client.ClientHttpRequestInterceptor` which does the 
+client-side tracing work.
+
+Now, when we call our endpoint, we should see a traceId, spanId, and our `client-id`
+as it would have commuted across the entire request chain.
+
+.output
+[source,text]
+----
+2018-03-02 01:13:25.017 2018-03-02 01:13:25,017 [c0d24dc6b7793eb7/738d09ca4e3dd91e]  INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=mario-id
+ 49687 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=mario-id
+----
 
 SLF4j 
  1 - Maintain some semblance of inter-process communication 
@@ -167,69 +221,3 @@ SLF4j
  
  4 - Bring it together using Spring-cloud-sleuth
 
-
-.Pom that enables tracing
-[source,xml]
-----
-		<dependency>
-			<groupId>io.zipkin.brave</groupId>
-			<artifactId>brave</artifactId>
-			<version>${brave.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.zipkin.reporter2</groupId>
-			<artifactId>zipkin-sender-okhttp3</artifactId>
-			<version>${zipkin-reporter2.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.zipkin.brave</groupId>
-			<artifactId>brave-instrumentation-spring-webmvc</artifactId>
-			<version>${brave.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.zipkin.brave</groupId>
-			<artifactId>brave-instrumentation-spring-web</artifactId>
-			<version>${brave.version}</version>
-		</dependency>
-		<!-- slf4j -->
-		<dependency>
-			<groupId>io.zipkin.brave</groupId>
-			<artifactId>brave-context-slf4j</artifactId>
-			<version>${brave.version}</version>
-		</dependency>        
-----
-
-A decription of the pom depenencies here !!!
- * Ship zipkin logs via http calls
- * enable slf4j MDC context propigation (for logging trace/spanc)
- * Adds B3-propigation for commuting trace/spans across HTTP client/service calls.
-
-If you are using log4j, then you'll want to add these artifacts:
-
-.Pom dependencies for log4j2, commons, JUL
-[source,xml]
-----
-		<!-- use log4j2, Commons, or Util-->
-		<dependency>
-			<groupId>io.zipkin.brave</groupId>
-			<artifactId>brave-context-log4j2</artifactId>
-			<version>${brave.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-jul</artifactId>
-			<version>${log4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-jcl</artifactId>
-			<version>${log4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-slf4j-impl</artifactId>
-			<version>${log4j.version}</version>
-		</dependency>
-----
-
-== Configure the application for brave tracing
