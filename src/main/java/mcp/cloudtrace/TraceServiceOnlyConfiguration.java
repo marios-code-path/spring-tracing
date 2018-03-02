@@ -18,7 +18,7 @@ public class TraceServiceOnlyConfiguration {
     }
 
     @Bean
-    Tracing logTracing() {
+    Tracing simpleTracing() {
         return Tracing.newBuilder()
                 .currentTraceContext((MDCCurrentTraceContext.create()))
                 .build();
@@ -30,14 +30,17 @@ public class TraceServiceOnlyConfiguration {
     }
 
     @Configuration
-    class WebTracingConfiguration extends WebMvcConfigurerAdapter {
+    public static class WebTracingConfiguration extends WebMvcConfigurerAdapter {
+
+        private final HttpTracing tracing;
+
+        public WebTracingConfiguration(HttpTracing tracing) {
+            this.tracing = tracing;
+        }
+
         @Override
         public void addInterceptors(InterceptorRegistry registry) {
-            registry.addInterceptor(TracingHandlerInterceptor.create(
-                    HttpTracing.create(Tracing
-                            .newBuilder()
-                            .currentTraceContext(MDCCurrentTraceContext.create())
-                            .build())));
+            registry.addInterceptor(TracingHandlerInterceptor.create(tracing));
         }
     }
 }

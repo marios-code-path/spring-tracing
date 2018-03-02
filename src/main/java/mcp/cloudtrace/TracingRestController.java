@@ -7,11 +7,11 @@ import org.springframework.web.client.RestTemplate;
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
-class ClientRestController {
-    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ClientRestController.class);
+class TracingRestController {
+    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TracingRestController.class);
     private final RestTemplate restTemplate;
 
-    public ClientRestController(RestTemplate rt) {
+    public TracingRestController(RestTemplate rt) {
         this.restTemplate = rt;
     }
 

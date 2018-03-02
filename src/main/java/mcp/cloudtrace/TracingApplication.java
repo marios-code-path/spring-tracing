@@ -7,9 +7,9 @@ import org.springframework.web.client.RestTemplate;
 
 
 @SpringBootApplication
-public class CloudTraceApplication {
+public class TracingApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(CloudTraceApplication.class, args);
+		SpringApplication.run(TracingApplication.class, args);
 	}
 }

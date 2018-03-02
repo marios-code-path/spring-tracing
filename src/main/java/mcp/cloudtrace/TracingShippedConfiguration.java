@@ -25,7 +25,7 @@ import zipkin2.reporter.okhttp3.OkHttpSender;
  * be configured last.
  */
 //@Configuration
-class TracingConfiguration {
+class TracingShippedConfiguration {
 
 	@Bean
 	RestTemplate restTemplate(HttpTracing tracing) {

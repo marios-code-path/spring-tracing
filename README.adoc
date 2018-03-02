@@ -31,18 +31,18 @@ route. Our application will demonstrate this kind of relationship:
 				       CCC
  
 == Starting up the app
-To start, you should have an existing application that includes Web, Lombok, and
-JPA/H2 for persistence. Hit http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[start.spring.io] link
-to download the base project. Find your favorite editor, and start with standing up a REST
+To start, setup a new spring app with the dependencies for Web, Lombok.
+Hit this http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[preconfigured start.spring.io] link
+to download the base project. Find your favorite editor, and start with standing up a REST 
 controller.
 
-.TracedApplication
+.TracingApplication
 [source,java]
 ----
 @SpringBootApplication
-public class ClientTraceApplication {
+public class TracingApplication {
 	public static void main(String[] args) {
-		SpringApplication.run(ClientTraceApplication.class, args);
+		SpringApplication.run(TracingApplication.class, args);
 	}
 }
 
@@ -55,11 +55,11 @@ class TracingConfiguration {
 }
 
 @RestController
-class ClientRestController {
-	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ClientRestController.class);
+class TracingRestController {
+	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TracingRestController.class);
 	private final RestTemplate restTemplate;
 
-	public ClientRestController(RestTemplate rt) {
+	public TracingRestController(RestTemplate rt) {
 		this.restTemplate = rt;
 	}
 
@@ -79,7 +79,7 @@ class ClientRestController {
 
 Then setup the logging properties:
 
-.LoggingProperties
+.application.properties
 [source,script]
 ----
 logging.pattern.level=%d{ABSOLUTE} [%X{traceId}/%X{spanId}] %-5p [%t] %C{2} - %m%n
@@ -93,7 +93,7 @@ terminal window (or tab), we can validate access to the endpoints.
 Try curling `localhost:8080/frontend` first. Then switch to your server terminal and
 observe the logs:
 
-.Not_traced_output
+.log_output_notrace
 [source,text]
 ----
 ...
@@ -105,24 +105,44 @@ observe the logs:
 == Adding Trace/Span to the service
 Notice that `%TraceId/%SpanId` are not being filled in yet.  Lets fix that by
 registering an `org.springframework.web.servlet.HandlerInterceptor` that exhibits
-trace instrumentation. Use the provided `brave.spring.webmvc.TracingHandlerInterceptor`
-class for tracing Spring WEB/MVC/REST endpoints. To configure the interceptor, we 
-will need to customize Spring MVC using a `org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter` 
+trace instrumentation. It will add the span/trace ids for visibility in loggin.
+Use the provided `brave.spring.webmvc.TracingHandlerInterceptor` class for tracing
+Spring WEB/MVC/REST endpoints. To configure the interceptor, we will need to customize
+MVC using a `org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter` 
 (or alternately use `WebMvcConfigurer` when using Spring 5.0 or more).
 
-.Simple_HTTP_tracing
+.TraceServiceOnlyConfiguration
 [source,java]
 ----
-@Configuration
-public class WebTracingConfiguration extends WebMvcConfigurerAdapter {
-	@Override
-	public void addInterceptors(InterceptorRegistry registry) {
-		registry.addInterceptor(TracingHandlerInterceptor.create(
-				HttpTracing.create(Tracing
-				.newBuilder()
-				.currentTraceContext(MDCCurrentTraceContext.create())
-				.build())));
-	}
+public class TraceServiceOnlyConfiguration {
+    @Bean
+    RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+    @Bean
+    Tracing simpleTracing() {
+        return Tracing.newBuilder()
+                .currentTraceContext((MDCCurrentTraceContext.create()))
+                .build();
+    }
+
+    @Bean
+    HttpTracing httpTracing(Tracing tracing) {
+        return HttpTracing.create(tracing);
+    }
+	
+    @Configuration
+    public static class WebTracingConfiguration extends WebMvcConfigurerAdapter {
+        private final HttpTracing httpTracing;
+        public WebTracingConfiguration(HttpTracing tracing) {
+            this.httpTracing = tracing;
+        }
+        @Override
+        public void addInterceptors(InterceptorRegistry registry) {
+            registry.addInterceptor(TracingHandlerInterceptor.create(httpTracing));
+        }
+    }
 }
 ----
 
@@ -140,7 +160,7 @@ log4j2's ThreadContext.
 So now, we can restart our service then invoke the `/frontend` and observe 
 the output in logs:
 
-.Invokation_with_span
+.traced_output
 [source,text]
 ----
 2018-02-28 18:49:51.200 2018-02-28 18:49:51,200 [6b5e99f057da5abd/1239a4f2e354ecdf] INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=null
@@ -190,7 +210,7 @@ In order to apply tracing concerns to our `restTemplate` we must provide -like t
 setup- an `org.springframework.http.client.ClientHttpRequestInterceptor` which does the 
 client-side tracing work.
 
-.output
+.trace_propagated_output
 [source,text]
 ----
 2018-03-02 01:13:25.017 2018-03-02 01:13:25,017 [c0d24dc6b7793eb7/738d09ca4e3dd91e]  INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=mario-id
@@ -200,7 +220,7 @@ client-side tracing work.
 Now, when we call our endpoint, we should see a traceId, spanId, and our `client-id`
 as it would have commuted across the entire request chain.
 
-== Ship traces to somewhere
+== Shipping traces to somewhere
 
 
 SLF4j 

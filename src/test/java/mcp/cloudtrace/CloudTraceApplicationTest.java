@@ -12,7 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = CloudTraceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@SpringBootTest(classes = TracingApplication.class, webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class CloudTraceApplicationTest {
 
 	private RestTemplate restTemplate = new RestTemplate();
