@@ -1,4 +1,4 @@
-package mcp.cloudtrace;
+package mcp.cloudtrace.config;
 
 import brave.Tracing;
 import brave.context.slf4j.MDCCurrentTraceContext;

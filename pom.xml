@@ -75,7 +75,11 @@
 			<artifactId>brave-instrumentation-spring-web</artifactId>
 			<version>${brave.version}</version>
 		</dependency>
-
+		<dependency>
+			<groupId>io.zipkin.reporter2</groupId>
+			<artifactId>zipkin-sender-amqp-client</artifactId>
+			<version>${zipkin-reporter2.version}</version>
+		</dependency>
 
 		<!-- slf4j -->
 		<dependency>

@@ -7,21 +7,11 @@ Mario Gray <mgray@pivotal.io>
 :website: https://cloud.spring.io/spring-cloud-sleuth/
 
 == Motivation
-This example will demonstrate applying tracing capability to an existing
-Spring or Spring Boot application.  We will begin by standing up an Spring MVC
-Restful service, and then by adding the necessary pieces for leveraging
-trace data and then shiping that to a Zipkin (Brave) server. Ultimately you could
-ship to any service, yet this example will demonstrate trace propagation
-across service requests Zipkin.
-
-In this example, we will demonstrate how to stand up an Spring application with
-various degrees of tracing.  It will start without tracing, then incrementaly
-add our tracing concerns. First lets take a look at some common trace nomenclature:
-
 What is:
-Trace data is composed of a parent:child tree structure.  Where a root node represents
-the `trace` or overall journey, and each `span` represents an individual hop along the
-route. Our application will demonstrate this kind of relationship:
+Trace data is composed of a parent:child tree structure called a Directed Acyclic Graph
+(DAG for short).  Where a root node represents the `trace` or overall journey, and each
+`span` represents an individual hop along the service route. Our application will 
+demonstrate this kind of relationship:
 
     client -> </frontent> -> </backend> -> </backend2>
 	  			AAA 		   AAA:BBB		 BBB:CCC
