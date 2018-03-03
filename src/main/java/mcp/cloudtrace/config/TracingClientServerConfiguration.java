@@ -12,12 +12,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-//@Configuration
-public class TracePropagationConfiguration {
+@Profile("example2")
+@Configuration
+public class TracingClientServerConfiguration {
 
     @Bean
     RestTemplate restTemplate(HttpTracing tracing) {

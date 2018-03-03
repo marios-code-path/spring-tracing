@@ -26,7 +26,7 @@
 		<amqp-client.version>4.4.2</amqp-client.version>
 		<log4j.version>2.10.0</log4j.version>
 		<zipkin-reporter2.version>2.3.2</zipkin-reporter2.version>
-		<spring-cloud.version>Finchley.BUILD-SNAPSHOT</spring-cloud.version>
+		<spring-cloud.version>Finchley.M7</spring-cloud.version>
 	</properties>
 
 	<dependencies>
@@ -88,6 +88,10 @@
 			<groupId>io.zipkin.reporter2</groupId>
 			<artifactId>zipkin-sender-kafka11</artifactId>
 		</dependency>
+
+		<!-- zk option (find spring) -->
+		<!-- https://mvnrepository.com/artifact/org.apache.zookeeper/zookeeper -->
+
 
 		<!-- Rabbit sender -->
 		<dependency>

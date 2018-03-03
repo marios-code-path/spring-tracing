@@ -8,11 +8,11 @@ import brave.propagation.ExtraFieldPropagation;
 import brave.sampler.Sampler;
 import brave.spring.web.TracingClientHttpRequestInterceptor;
 import brave.spring.webmvc.TracingHandlerInterceptor;
-import mcp.cloudtrace.config.TracePropagationConfiguration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
@@ -25,7 +25,8 @@ import zipkin2.reporter.okhttp3.OkHttpSender;
  * This adds tracing configuration to any web mvc controllers or rest template clients. This should
  * be configured last.
  */
-//@Configuration
+@Profile("zipkin")
+@Configuration
 class TracingShipToZipkinConfiguration {
     /**
      * Configuration for how to send spans to Zipkin
