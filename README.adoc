@@ -263,3 +263,55 @@ spans out of process.
 
 This takes care of getting traces out to zipkin.  Now we can restart our service
 make a few endpoint calls, and observe traces locally.
+
+=== Zipkin via Kafka Topic
+Support for Kafka topics is possible through the use of `zipkin2.reporter.kafka11.KafkaSender`
+sender. We will continue with the same `Tracing` configuration since there is no change there. 
+
+[source,java]
+----
+    @Bean
+    Sender sender(@Value("${mcp.kafka.url}") String kafkaUrl) throws IOException {
+        return KafkaSender.create(kafkaUrl);
+    }
+----
+
+To get OpenZipkin to consume from Kafka, you will need to have a kafka sevice running.
+For information on standing up a Kafka server, see https://kafka.apache.org/quickstart[the quickstart] section.
+Running the zipkin server is done with the following method:
+
+[source,script]
+----
+$ KAFKA_ZOOKEEPER=127.0.0.1:2181
+$ java -jar /path/kafka-server.jar
+----
+
+== RabbitMQ
+Another common Sender is the `zipkin2.reporter.amqp.RabbitMQSender` sender. This will ship
+JSON encoded spans to a Queue.
+
+Setting up the RabbitMQSender requires a host URL, and the name of the queue which Zipkin-server
+is expected to consume.
+
+[source,java]
+----
+    @Bean
+    Sender sender(@Value("${mcp.rabbit.url}") String rabbitmqHostUrl,
+                  @Value("${mcp.rabbit.queue}") String zipkinQueue) throws IOException {
+        RabbitMQSender sender;
+
+        sender = RabbitMQSender.newBuilder()
+                .queue(zipkinQueue)
+                .addresses(rabbitmqHostUrl).build();
+
+        return sender;
+    }
+----
+
+Starting up zipkin server against a rabbitmq server is done with the following:
+
+[source,script]
+----
+$ export RABBIT_URI=amqp://localhost:5672/
+$ java -jar /path/zipkin-server.jar
+----
