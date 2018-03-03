@@ -9,16 +9,27 @@ Mario Gray <mgray@pivotal.io>
 == Motivation
 Trace data is composed of a parent:child tree structure called a Directed Acyclic Graph
 (DAG for short).  Where a root node represents the `trace` or overall journey, and each
-`span` represents an individual hop along the service route. Our application will 
-demonstrate this kind of relationship:
+`span` represents an individual hop along the service route. To illustrate better, I 
+have included the original ASCII diagram from the openzipkin github.
 
-    client -> </frontent> -> </backend> -> </backend2>
-	  			AAA 		   AAA:BBB		 BBB:CCC
-				  \
-				    BBB
-					 \
-				       CCC
- 
+```
+   Client Tracer                                                  Server Tracer     
+┌─────────────────-----─┐                                       ┌────────────────-----──┐
+│                       │                                       │                       │
+│   TraceContext        │           Http Request Headers        │   TraceContext        │
+│ ┌─────────────-----─┐ │          ┌───────────────────┐        │ ┌────────────-----──┐ │
+│ │ TraceId           │ │          │ X─B3─TraceId      │        │ │ TraceId           │ │
+│ │                   │ │          │                   │        │ │                   │ │
+│ │ ParentSpanId      │ │ Extract  │ X─B3─ParentSpanId │ Inject │ │ ParentSpanId      │ │
+│ │                   ├─┼─────────>│                   ├────────┼>│                   │ │
+│ │ SpanId            │ │          │ X─B3─SpanId       │        │ │ SpanId            │ │
+│ │                   │ │          │                   │        │ │                   │ │
+│ │ Sampling decision │ │          │ X─B3─Sampled      │        │ │ Sampling decision │ │
+│ └──────────-----────┘ │          └───────────────────┘        │ └────────────-----──┘ │
+│                       │                                       │                       │
+└────────────────-----──┘                                       └───────────────-----───┘
+```
+                
 == Starting up the app
 To start, setup a new spring app with the dependencies for Web, Lombok.
 Hit this http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[preconfigured start.spring.io] link
