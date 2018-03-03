@@ -17,7 +17,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-@Profile("example2")
+@Profile("clientserver")
 @Configuration
 public class TracingClientServerConfiguration {
 

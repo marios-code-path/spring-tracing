@@ -1,4 +1,4 @@
-= Spring Tracing with Zipkin Brave and Spring Cloud Sleuth
+= Spring Tracing with OpenZipkin Brave, Kafka, and Spring Boot
 Mario Gray <mgray@pivotal.io>
 :Author Initials: MVG
 :toc:
@@ -7,7 +7,6 @@ Mario Gray <mgray@pivotal.io>
 :website: https://cloud.spring.io/spring-cloud-sleuth/
 
 == Motivation
-What is:
 Trace data is composed of a parent:child tree structure called a Directed Acyclic Graph
 (DAG for short).  Where a root node represents the `trace` or overall journey, and each
 `span` represents an individual hop along the service route. Our application will 
@@ -78,9 +77,9 @@ logging.level.mcp.cloudtrace=info
 spring.application.name=spring-tracing
 ----
 
-Startup the server by running `mvn spring-boot:run` at the command line. And in another
+Start the server by running `mvn spring-boot:run` at the command line. And in another
 terminal window (or tab), we can validate access to the endpoints.
-Try curling `localhost:8080/frontend` first. Then switch to your server terminal and
+Try accessing `localhost:8080/frontend` first. Then switch to your server terminal and
 observe the logs:
 
 .log_output_notrace
@@ -136,8 +135,8 @@ public class TraceServiceOnlyConfiguration {
 }
 ----
 
-The interceptor receives an HttpTracing object which has the job of activating/not a
-new trace, and handling any custom trace-scoped needs like propigation, and Trace 
+This interceptor receives an `HttpTracing` object which has the job of not/activating a
+new trace, handling any custom trace-scoped needs like propigation and Trace 
 Context commuting.
 
 Because we are using SLF4j - that implements it's own version of Managed Diagnostic Context (MDC). 
@@ -147,8 +146,14 @@ names: `traceId, spanId, parentId`. If you are using log4j2 instead, then a prov
 class `brave.context.log4j2.ThreadContextCurrentTraceContext` will do the same for
 log4j2's ThreadContext.
 
-So now, we can restart our service then invoke the `/frontend` and observe 
-the output in logs:
+Restart your spring-boot application, and then invoke `/frontend` using an http fetching
+tool, and observe server logs to confirm that you get `traceId` and `spanId` filled into 
+INFO logs.
+
+[source,bash]
+----
+$ curl -H "client-id: foo" http://localhost:8080/frontend
+----
 
 .traced_output
 [source,text]
@@ -157,18 +162,25 @@ the output in logs:
  37142 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=null
 ----
 
+
 == Tracing across service boundaries
-Now we can observe trace/span state, but what about request-side tracing?  How can
-we commute the 'client-id' header to downstream requests? Logging trace/span is not
-enough if we cannot correlate them. To do this, we will add https://github.com/openzipkin/b3-propagation[brave B3-propigation]
-(adds X-B3-*Id headers) to HTTP requests made by our `restTemplate` bean.
+The above example is so far limited in repect to downstream communication. We 
+want to enable trace context propagation across service boundaries.  
+In this section we'll go into HTTP client-side trace instrumention. 
 
-We continue the code development by modifying our `WebTracingConfiguration` class
-to wire up an `HttpTracing` object that will propigate our `client-id` header
-across requests in the same trace. The full source to this configuration is in 
-`mcp.TracePropagationConfiguration`.  The salient bits are discussed below:
+Clients requests originating from the server will need a trace context. 
+The downstream HTTP call will encode using https://github.com/openzipkin/b3-propagation[B3Propagation] it's context as request headers. 
+In order to apply this behaviour to our `restTemplate` we must provide -like the server 
+setup- an `org.springframework.http.client.ClientHttpRequestInterceptor` to do the 
+client-side tracing work.
 
-.TracePropagationConfiguration
+Additionally, we want to know which client-id was seen during a trace. 
+Brave provides the `ExtraFieldPropagation` class to support comprehensive
+use of add-on properties.  Although it intrusive as each trace will get laden
+with additional data, however it is useful where there are client concerns
+to analyze in a trace path.
+
+.TracingClientServiceConfiguration
 [source, java]
 ----
     @Bean
@@ -191,15 +203,6 @@ across requests in the same trace. The full source to this configuration is in
     }
 ----
 
-By customizing our Tracing bean, we can tell brave that we want our `client-id` header
-propated across request/service boundries. Brave provides the `ExtraFieldPropagation` 
-class to support comprehensive use of these fields in an application-specific way.  Check the
-https://github.com/openzipkin/brave/blob/master/brave/src/main/java/brave/propagation/ExtraFieldPropagation.java[documentation] for further info.
-
-In order to apply tracing concerns to our `restTemplate` we must provide -like the server 
-setup- an `org.springframework.http.client.ClientHttpRequestInterceptor` which does the 
-client-side tracing work.
-
 .trace_propagated_output
 [source,text]
 ----
@@ -210,35 +213,53 @@ client-side tracing work.
 Now, when we call our endpoint, we should see a traceId, spanId, and our `client-id`
 as it would have commuted across the entire request chain.
 
-== Shipping traces to somewhere
+== Shipping traces to zipkin-server
 Usually you will want to send your trace logs to an aggregation server for monitoring.
+For example, when services do act up you'll be able to pick up which service routes
+are affected.
 
+There are a number of ways to get traces into OpenZipkin.  In this seciton, we will dive into 
+3 common ways to ship traces to zipkin.
 
-== Another fork in the road: Sleuth
-In the next article, we will solve the same problems using Sleuth - an all-in-One
-ready made distribution that binds spring with zipkin tracing properties.
+=== Zipkin Direct via HTTP
+Spans are created in instrumentation, transported out-of-band, and eventually persisted.
+Zipkin uses Reporters `zipkin2.reporter.Reporter` to sends spans (or encoded spans) recorded
+by instrumentation out of process. There are a couple of default Reporters that do not send
+but can help with testing: `Reporter.NOOP` and `Reporter.CONSOLE`.
 
+In this case, we will configure an (ThreadSafe)`AsyncReporter` that will give us protection from
+latency or exceptions when reporting spans out of process. In order to abstract transport
+specifics, zipkin includes the `zipkin2.reporter.Sender` component to encode and trasmit 
+spans out of process.
 
-SLF4j 
- 1 - Maintain some semblance of inter-process communication 
-	 and apply to business Logic.
-     HTTP Rest call 
-	 	This demo will expose 2 Restful endpoints 
-		One will call the other to demonstrate trace propigation across HTTP 
-	 Finagle RPC call
-	 	This demo will expose 2 finagle services
-		"" trace propigation via Finagle (mysql)
-	 WebSocket stream
-	 	This demo will expose a socket service which receives
-		it's stream via kafka
- 	
- 2 - Apply tracing logic
-	- Starting with SLF4j MDC tracing
-	- Adds Brave tracing without instrumentation
-	- Adds Brave trace with trace shipping to zipkin
-	- further trace shipping options
+.trace_zipkin_bound
+[source,java]
+----
+    @Bean
+    Sender sender(@Value("${mcp.zipkin.url}") String zipkinSenderUrl) {
+        return OkHttpSender.create(zipkinSenderUrl);
+    }
 
- 3 - Stand up tracing aggregator (Brave, Actuator?)
- 
- 4 - Bring it together using Spring-cloud-sleuth
+    @Bean
+    AsyncReporter<Span> spanReporter(Sender sender) {
+        return AsyncReporter.create(sender);
+    }
 
+    @Bean
+    Tracing tracing(@Value("${mcp:spring-tracing}") String serviceName,
+                    AsyncReporter<Span> spanReporter) {
+        return Tracing
+                .newBuilder()
+                .sampler(Sampler.ALWAYS_SAMPLE)
+                .localServiceName(serviceName)
+                .propagationFactory(ExtraFieldPropagation
+                        .newFactory(B3Propagation.FACTORY, "client-id"))
+                .currentTraceContext(MDCCurrentTraceContext.create())
+                .spanReporter(spanReporter)
+                .build();
+    }
+
+----
+
+This takes care of getting traces out to zipkin.  Now we can restart our service
+make a few endpoint calls, and observe traces locally.
