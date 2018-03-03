@@ -53,7 +53,8 @@ class TracingShipToZipkinConfiguration {
     }
 
     @Bean
-    Tracing tracing(@Value("${mcp:spring-tracing}") String serviceName) {
+    Tracing tracing(@Value("${mcp:spring-tracing}") String serviceName,
+                    AsyncReporter<Span> spanReporter) {
         return Tracing
                 .newBuilder()
                 .sampler(Sampler.ALWAYS_SAMPLE)
@@ -61,6 +62,7 @@ class TracingShipToZipkinConfiguration {
                 .propagationFactory(ExtraFieldPropagation
                         .newFactory(B3Propagation.FACTORY, "client-id"))
                 .currentTraceContext(MDCCurrentTraceContext.create())
+                .spanReporter(spanReporter)
                 .build();
     }
 

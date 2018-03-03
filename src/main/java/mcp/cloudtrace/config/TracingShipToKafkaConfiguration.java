@@ -18,25 +18,18 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import zipkin2.Span;
 import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.Sender;
-import zipkin2.reporter.amqp.RabbitMQSender;
+import zipkin2.reporter.kafka11.KafkaSender;
 
 import java.io.IOException;
 
-//@Configuration
-public class TracingShipToRabbitConfiguration {
+@Configuration
+public class TracingShipToKafkaConfiguration {
     /**
      * Configuration for sending spans to RabbitMQ
      */
     @Bean
-    Sender sender(@Value("${mcp.rabbit.url}") String rabbitmqHostUrl,
-                  @Value("${mcp.rabbit.queue}") String zipkinQueue) throws IOException {
-        RabbitMQSender sender;
-
-        sender = RabbitMQSender.newBuilder()
-                .queue(zipkinQueue)
-                .addresses(rabbitmqHostUrl).build();
-
-        return sender;
+    Sender sender(@Value("${mcp.kafka.url}") String kafkaUrl) throws IOException {
+        return KafkaSender.create(kafkaUrl);
     }
 
     /**
@@ -89,5 +82,4 @@ public class TracingShipToRabbitConfiguration {
             registry.addInterceptor(TracingHandlerInterceptor.create(tracing));
         }
     }
-
 }

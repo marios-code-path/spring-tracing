@@ -77,6 +77,18 @@
 			<version>${brave.version}</version>
 		</dependency>
 
+		<!-- Kafka sender -->
+		<dependency>
+			<groupId>org.apache.kafka</groupId>
+			<artifactId>kafka-clients</artifactId>
+			<!-- recent clients can talk to old 0.10 brokers -->
+			<version>1.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.zipkin.reporter2</groupId>
+			<artifactId>zipkin-sender-kafka11</artifactId>
+		</dependency>
+
 		<!-- Rabbit sender -->
 		<dependency>
 			<groupId>com.rabbitmq</groupId>
