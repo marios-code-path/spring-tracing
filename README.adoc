@@ -12,7 +12,7 @@ The more distributed a system the harder it is to debug errors, find latency, an
 
 
 == Trace Primer
-Distributed tracing platforms like [Open Zipkin](https://zipkin.io/) record trace data.  Trace data is composed of a parent:child tree structure called a Directed Acyclic Graph
+Distributed tracing platforms like https://zipkin.io/[Open Zipkin] record trace data.  Trace data is composed of a parent:child tree structure called a Directed Acyclic Graph
 (DAG for short).    A root node represents the `trace` or overall journey, and each
 `span` represents an individual hop along the service route. To illustrate better, I 
 have included an ASCII diagram from https://github.com/openzipkin/zipkin[openzipkin github].
