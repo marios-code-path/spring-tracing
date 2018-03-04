@@ -7,10 +7,15 @@ Mario Gray <mgray@pivotal.io>
 :website: https://cloud.spring.io/spring-cloud-sleuth/
 
 == Motivation
+I want to trace my service calls across service boundries, and server stacks.  To 
+do this, I discovered the OpenZipkin project which uses Spring Boot to expose the 
+OpenZipkin server. 
+
+== Trace Primer
 Trace data is composed of a parent:child tree structure called a Directed Acyclic Graph
 (DAG for short).  Where a root node represents the `trace` or overall journey, and each
 `span` represents an individual hop along the service route. To illustrate better, I 
-have included the original ASCII diagram from the openzipkin github.
+have included an ASCII diagram from https://github.com/openzipkin/zipkin[openzipkin github].
 
 ```
    Client Tracer                                                  Server Tracer     
@@ -29,12 +34,15 @@ have included the original ASCII diagram from the openzipkin github.
 │                       │                                       │                       │
 └────────────────-----──┘                                       └───────────────-----───┘
 ```
-                
+
+
 == Starting up the app
 To start, setup a new spring app with the dependencies for Web, Lombok.
-Hit this http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[preconfigured start.spring.io] link
+Follow this http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[preconfigured start.spring.io] link
 to download the base project. Find your favorite editor, and start with standing up a REST 
-controller.
+controller. We make this a Spring Boot application that exposes 2 rest endpoints, and utilizes
+a `restTemplate` for accessing remote HTTP resources.  In this case, we will expose 1 endpoint
+to serve data, and another to act as a first-hop along our service route.
 
 .TracingApplication
 [source,java]
