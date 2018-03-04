@@ -7,13 +7,13 @@ Mario Gray <mgray@pivotal.io>
 :website: https://cloud.spring.io/spring-cloud-sleuth/
 
 == Motivation
-I want to trace my service calls across service boundries, and server stacks.  To 
-do this, I discovered the OpenZipkin project which uses Spring Boot to expose the 
-OpenZipkin server. 
+The more distributed a system the harder it is to debug errors, find latency, and to understand the potentially cascading impact of a bug. External monitoring only tells you the overall response time and number of invocations but doesn't give us a way to understand internal invocations. Structured log entries can be correllated, eventually, to paint a picture of the movement of a request through a system, but structured logs are not easy to query. 
+
+
 
 == Trace Primer
-Trace data is composed of a parent:child tree structure called a Directed Acyclic Graph
-(DAG for short).  Where a root node represents the `trace` or overall journey, and each
+Distributed tracing platforms like [Open Zipkin](https://zipkin.io/) record trace data.  Trace data is composed of a parent:child tree structure called a Directed Acyclic Graph
+(DAG for short).    A root node represents the `trace` or overall journey, and each
 `span` represents an individual hop along the service route. To illustrate better, I 
 have included an ASCII diagram from https://github.com/openzipkin/zipkin[openzipkin github].
 
@@ -37,12 +37,7 @@ have included an ASCII diagram from https://github.com/openzipkin/zipkin[openzip
 
 
 == Starting up the app
-To start, setup a new spring app with the dependencies for Web, Lombok.
-Follow this http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[preconfigured start.spring.io] link
-to download the base project. Find your favorite editor, and start with standing up a REST 
-controller. We make this a Spring Boot application that exposes 2 rest endpoints, and utilizes
-a `restTemplate` for accessing remote HTTP resources.  In this case, we will expose 1 endpoint
-to serve data, and another to act as a first-hop along our service route.
+Generate  a new Spring application with the dependencies for Web and  Lombok. Use this link to generate a http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[new project from the Spring Initializr (http://start.spring.io)]. We'll stand up a REST  API with two  endpoints. One endpoint will call the other. We'll use the Spring Framework `RestTemplate`  to make HTTP calls. In this trivial example, we'll have one service call another on the same node, but the principles applies to as many nodes as we'd like. 
 
 .TracingApplication
 [source,java]
@@ -85,7 +80,7 @@ class TracingRestController {
 }
 ----
 
-Then setup the logging properties:
+Configure the logger and give this node a name. 
 
 .application.properties
 [source,script]
@@ -93,12 +88,11 @@ Then setup the logging properties:
 logging.pattern.level=%d{ABSOLUTE} [%X{traceId}/%X{spanId}] %-5p [%t] %C{2} - %m%n
 logging.level.root=off
 logging.level.mcp.cloudtrace=info
+
 spring.application.name=spring-tracing
 ----
 
-Start the server by running `mvn spring-boot:run` at the command line. And in another
-terminal window (or tab), we can validate access to the endpoints.
-Try accessing `localhost:8080/frontend` first. Then switch to your server terminal and
+Start the server by running `mvn spring-boot:run` at the command line in the directory of the project or just rain the main class in your favorite IDE. Try accessing `localhost:8080/frontend` first. Then switch to your server terminal and
 observe the logs:
 
 .log_output_notrace
