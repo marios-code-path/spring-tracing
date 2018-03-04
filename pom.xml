@@ -9,10 +9,19 @@
     <packaging>pom</packaging>
     <name>Spring Tracing Examples</name>
 
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>1.5.7.RELEASE</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+
     <modules>
         <module>trace-example</module>
-        <!--<module>trace-grpc</module>-->
+        <module>trace-grpc</module>
         <!--<module>trace-finagle</module>-->
     </modules>
+
 
 </project>

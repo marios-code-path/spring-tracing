@@ -5,16 +5,15 @@
 
 	<groupId>mcp</groupId>
 	<artifactId>trace-example</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<packaging>jar</packaging>
 	<name>HTTP Tracing</name>
 	<description>Spring Trace Examples</description>
 
 	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>1.5.7.RELEASE</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<groupId>mcp</groupId>
+		<artifactId>spring-tracing</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 
 	<properties>
