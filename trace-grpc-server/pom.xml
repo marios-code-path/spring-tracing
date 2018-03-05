@@ -18,6 +18,11 @@
     <dependencies>
         <dependency>
             <groupId>mcp</groupId>
+            <artifactId>trace-configuration</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>mcp</groupId>
             <artifactId>trace-grpc-client</artifactId>
             <version>0.0.1</version>
         </dependency>
@@ -79,12 +84,6 @@
                     <artifactId>spring-boot-starter</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.zipkin.brave</groupId>
-            <artifactId>brave-instrumentation-grpc</artifactId>
-            <version>${brave.version}</version>
         </dependency>
     </dependencies>
 

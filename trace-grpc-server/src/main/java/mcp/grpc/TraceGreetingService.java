@@ -1,6 +1,10 @@
-package mcp;
+package mcp.grpc;
 
 import io.grpc.stub.StreamObserver;
+import mcp.Empty;
+import mcp.Greet;
+import mcp.Greeting;
+import mcp.GreetingServiceGrpc;
 import org.lognet.springboot.grpc.GRpcService;
 
 @GRpcService

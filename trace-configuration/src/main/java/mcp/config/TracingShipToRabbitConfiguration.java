@@ -1,4 +1,4 @@
-package mcp.cloudtrace.config;
+package mcp.config;
 
 import brave.Tracing;
 import brave.context.slf4j.MDCCurrentTraceContext;
@@ -50,14 +50,6 @@ public class TracingShipToRabbitConfiguration {
         return AsyncReporter.create(sender);
     }
 
-
-    @Bean
-    RestTemplate restTemplate(HttpTracing tracing) {
-        return new RestTemplateBuilder()
-                .interceptors(TracingClientHttpRequestInterceptor.create(tracing))
-                .build();
-    }
-
     @Bean
     Tracing tracing(@Value("${mcp:spring-tracing}") String serviceName,
                     AsyncReporter<Span> spanReporter) {
@@ -76,20 +68,4 @@ public class TracingShipToRabbitConfiguration {
     HttpTracing httpTracing(Tracing tracing) {
         return HttpTracing.create(tracing);
     }
-
-    @Configuration
-    public static class WebTracingConfiguration extends WebMvcConfigurerAdapter {
-
-        private final HttpTracing tracing;
-
-        public WebTracingConfiguration(HttpTracing tracing) {
-            this.tracing = tracing;
-        }
-
-        @Override
-        public void addInterceptors(InterceptorRegistry registry) {
-            registry.addInterceptor(TracingHandlerInterceptor.create(tracing));
-        }
-    }
-
 }

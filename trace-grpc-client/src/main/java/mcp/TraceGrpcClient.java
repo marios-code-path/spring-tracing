@@ -1,11 +1,8 @@
 package mcp;
 
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -13,16 +10,15 @@ import javax.annotation.PostConstruct;
 @Service
 public class TraceGrpcClient {
 
-    @PostConstruct
-    private void initializeClient() {
-        greetingServiceBlockingStub = GreetingServiceGrpc.newBlockingStub(managedChannel());
+    private final ManagedChannel managedChannel;
+
+    public TraceGrpcClient(ManagedChannel managedChannel) {
+        this.managedChannel = managedChannel;
     }
 
-    @Bean
-    private ManagedChannel managedChannel() {
-        return ManagedChannelBuilder.forAddress("localhost", 6565)
-                .usePlaintext(true)
-                .build();
+    @PostConstruct
+    private void initializeClient() {
+        greetingServiceBlockingStub = GreetingServiceGrpc.newBlockingStub(managedChannel);
     }
 
     Logger log = LoggerFactory.getLogger(TraceGrpcClient.class);
