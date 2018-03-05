@@ -1,5 +1,8 @@
 package mcp.cloudtrace;
 
+import mcp.GreetingServiceGrpc;
+import mcp.TraceGrpcClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
@@ -15,11 +18,15 @@ class TracingRestController {
         this.restTemplate = rt;
     }
 
+    @Autowired
+    TraceGrpcClient traceGrpcClient;
+
     @GetMapping("/backend")
     public String backend(HttpServletRequest req) {
         String clientId = req.getHeader("client-id");
         log.info("clientId=" + clientId);
-        return "Hello, " + clientId;
+
+        return traceGrpcClient.greeting(clientId).getHello();
     }
 
     @GetMapping("/frontend")
