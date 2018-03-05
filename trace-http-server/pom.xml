@@ -16,17 +16,6 @@
 		<version>0.0.1</version>
 	</parent>
 
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<java.version>1.8</java.version>
-		<brave.version>4.15.0</brave.version>
-		<amqp-client.version>4.4.2</amqp-client.version>
-		<log4j.version>2.10.0</log4j.version>
-		<zipkin-reporter2.version>2.3.2</zipkin-reporter2.version>
-		<spring-cloud.version>Finchley.M7</spring-cloud.version>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>mcp</groupId>

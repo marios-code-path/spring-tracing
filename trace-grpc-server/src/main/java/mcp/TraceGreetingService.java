@@ -9,11 +9,11 @@ public class TraceGreetingService extends GreetingServiceGrpc.GreetingServiceImp
 
     @Override
     public void sayHi(Empty request, StreamObserver<Greeting> responseObserver) {
-        log.info("HELLO");
+        log.info("sayHi");
         responseObserver.onNext(
                 Greeting
                         .newBuilder()
-                        .setHello("HELLO")
+                        .setHello("hello")
                         .build());
         responseObserver.onCompleted();
     }
@@ -24,7 +24,7 @@ public class TraceGreetingService extends GreetingServiceGrpc.GreetingServiceImp
         responseObserver.onNext(
                 Greeting
                         .newBuilder()
-                        .setHello(request.getName())
+                        .setHello("hello " + request.getName())
                         .build());
         responseObserver.onCompleted();
     }
