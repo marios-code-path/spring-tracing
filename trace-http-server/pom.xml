@@ -4,16 +4,16 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>mcp</groupId>
-	<artifactId>trace-example</artifactId>
+	<artifactId>trace-http-server</artifactId>
 	<version>0.0.1</version>
 	<packaging>jar</packaging>
-	<name>HTTP Tracing</name>
-	<description>Spring Trace Examples</description>
+	<name>HTTP Server Tracing</name>
+	<description>Spring Trace HTTP Concepts</description>
 
 	<parent>
 		<groupId>mcp</groupId>
-		<artifactId>spring-tracing</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<artifactId>spring-tracing-parent</artifactId>
+		<version>0.0.1</version>
 	</parent>
 
 	<properties>
@@ -30,20 +30,12 @@
 	<dependencies>
 		<dependency>
 			<groupId>mcp</groupId>
-			<artifactId>trace-grpc</artifactId>
+			<artifactId>trace-grpc-client</artifactId>
 			<version>0.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+package mcp;
+
+message Greeting {
+    string hello = 1;
+}
+
+message Greet {
+    string name = 1;
+}
+
+message Empty {
+
+}
+
+service GreetingService {
+    rpc sayHi(Empty) returns (Greeting);
+    rpc greeting(Greet) returns (Greeting);
+}

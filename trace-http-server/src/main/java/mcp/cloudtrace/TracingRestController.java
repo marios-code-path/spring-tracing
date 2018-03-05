@@ -1,6 +1,5 @@
 package mcp.cloudtrace;
 
-import mcp.GreetingServiceGrpc;
 import mcp.TraceGrpcClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

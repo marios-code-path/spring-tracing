@@ -3,16 +3,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>mcp</groupId>
-    <artifactId>trace-grpc</artifactId>
+    <artifactId>trace-grpc-server</artifactId>
     <version>0.0.1</version>
     <packaging>jar</packaging>
     <name>GRPC Tracing</name>
-    <description>Spring Trace GRPC Example</description>
+    <description>Spring Trace GRPC Concepts</description>
 
     <parent>
         <groupId>mcp</groupId>
-        <artifactId>spring-tracing</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <artifactId>spring-tracing-parent</artifactId>
+        <version>0.0.1</version>
     </parent>
 
     <properties>
@@ -25,9 +25,16 @@
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-logging</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -90,11 +97,6 @@
         </extensions>
         <plugins>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-
-            <plugin>
                 <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>0.5.0</version>
@@ -130,6 +132,10 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

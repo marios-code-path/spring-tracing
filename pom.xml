@@ -4,8 +4,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>mcp</groupId>
-    <artifactId>spring-tracing</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <artifactId>spring-tracing-parent</artifactId>
+    <version>0.0.1</version>
     <packaging>pom</packaging>
     <name>Spring Tracing Examples</name>
 
@@ -18,8 +18,10 @@
 
 
     <modules>
-        <module>trace-example</module>
-        <module>trace-grpc</module>
+        <module>trace-grpc-server</module>
+        <module>trace-grpc-client</module>
+	<module>trace-http-server</module>
+	<module>trace-http-client</module>
         <!--<module>trace-finagle</module>-->
     </modules>
 
