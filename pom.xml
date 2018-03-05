@@ -20,8 +20,7 @@
     <modules>
         <module>trace-grpc-server</module>
         <module>trace-grpc-client</module>
-	<module>trace-http-server</module>
-	<module>trace-http-client</module>
+	    <module>trace-http-server</module>
         <!--<module>trace-finagle</module>-->
     </modules>
 

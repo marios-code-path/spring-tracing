@@ -10,13 +10,12 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 
-@Profile("grpc-client")
 @Service
 public class TraceGrpcClient {
 
     @PostConstruct
-    private void initializeClient(ManagedChannel managedChannel) {
-        greetingServiceBlockingStub = GreetingServiceGrpc.newBlockingStub(managedChannel);
+    private void initializeClient() {
+        greetingServiceBlockingStub = GreetingServiceGrpc.newBlockingStub(managedChannel());
     }
 
     @Bean
