@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 
 @Service
-public class TraceGrpcClient {
+public class GreetingClient {
 
     private final ManagedChannel managedChannel;
 
-    public TraceGrpcClient(ManagedChannel managedChannel) {
+    public GreetingClient(ManagedChannel managedChannel) {
         this.managedChannel = managedChannel;
     }
 
@@ -21,7 +21,7 @@ public class TraceGrpcClient {
         greetingServiceBlockingStub = GreetingServiceGrpc.newBlockingStub(managedChannel);
     }
 
-    Logger log = LoggerFactory.getLogger(TraceGrpcClient.class);
+    Logger log = LoggerFactory.getLogger(GreetingClient.class);
 
     private GreetingServiceGrpc.GreetingServiceBlockingStub
             greetingServiceBlockingStub;

@@ -23,11 +23,12 @@ import zipkin2.reporter.amqp.RabbitMQSender;
 
 import java.io.IOException;
 
-@Profile("rabbit")
+@Profile({"rabbit"})
 @Configuration
 public class TracingShipToRabbitConfiguration {
     /**
      * Configuration for sending spans to RabbitMQ
+     *
      */
     @Bean
     Sender sender(@Value("${mcp.rabbit.url}") String rabbitmqHostUrl,
@@ -48,20 +49,6 @@ public class TracingShipToRabbitConfiguration {
     AsyncReporter<Span> spanReporter(Sender sender) {
 
         return AsyncReporter.create(sender);
-    }
-
-    @Bean
-    Tracing tracing(@Value("${mcp:spring-tracing}") String serviceName,
-                    AsyncReporter<Span> spanReporter) {
-        return Tracing
-                .newBuilder()
-                .sampler(Sampler.ALWAYS_SAMPLE)
-                .localServiceName(serviceName)
-                .propagationFactory(ExtraFieldPropagation
-                        .newFactory(B3Propagation.FACTORY, "client-id"))
-                .currentTraceContext(MDCCurrentTraceContext.create())
-                .spanReporter(spanReporter)
-                .build();
     }
 
     @Bean

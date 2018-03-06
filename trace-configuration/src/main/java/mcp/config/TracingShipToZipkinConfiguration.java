@@ -21,16 +21,12 @@ import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.Sender;
 import zipkin2.reporter.okhttp3.OkHttpSender;
 
-/**
- * This adds tracing configuration to any web mvc controllers or rest template clients. This should
- * be configured last.
- */
-@Profile("zipkin")
+@Profile({"zipkin"})
 @Configuration
 class TracingShipToZipkinConfiguration {
 
     /**
-     * Configuration for how to send spans to Zipkin
+     * Configuration for how to send spans to directly to Zipkin
      */
     @Bean
     Sender sender(@Value("${mcp.zipkin.url}") String zipkinSenderUrl) {
@@ -45,20 +41,6 @@ class TracingShipToZipkinConfiguration {
     AsyncReporter<Span> spanReporter(Sender sender) {
 
         return AsyncReporter.create(sender);
-    }
-
-    @Bean
-    Tracing tracing(@Value("${mcp:spring-tracing}") String serviceName,
-                    AsyncReporter<Span> spanReporter) {
-        return Tracing
-                .newBuilder()
-                .sampler(Sampler.ALWAYS_SAMPLE)
-                .localServiceName(serviceName)
-                .propagationFactory(ExtraFieldPropagation
-                        .newFactory(B3Propagation.FACTORY, "client-id"))
-                .currentTraceContext(MDCCurrentTraceContext.create())
-                .spanReporter(spanReporter)
-                .build();
     }
 
     @Bean

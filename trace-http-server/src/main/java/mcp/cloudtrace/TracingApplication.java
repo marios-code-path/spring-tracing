@@ -1,17 +1,16 @@
 package mcp.cloudtrace;
 
-import mcp.TraceGrpcClient;
+import mcp.config.TracingConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestTemplate;
 
-
-@SpringBootApplication
-@Import(TraceGrpcClient.class)
+@Profile({"web","grpc","zipkin"})
+@SpringBootApplication(scanBasePackageClasses = {TracingConfiguration.class, TracingRestController.class})
 public class TracingApplication {
 
     @Autowired
@@ -19,7 +18,7 @@ public class TracingApplication {
 
     @Bean
     RestTemplate restTemplate() {
-        return restTemplateBuilder.build();
+        return  restTemplateBuilder.build();
     }
 
     public static void main(String[] args) {

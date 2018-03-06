@@ -10,15 +10,17 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import zipkin2.reporter.Reporter;
 
-@Profile("singlecontext")
+@Profile("log")
 @Configuration
-public class TracingServiceOnlyConfiguration {
+public class TracingLogOnlyConfiguration {
 
     @Bean
     Tracing tracing() {
         return Tracing.newBuilder()
                 .currentTraceContext((MDCCurrentTraceContext.create()))
+                .spanReporter(Reporter.CONSOLE)
                 .build();
     }
 
