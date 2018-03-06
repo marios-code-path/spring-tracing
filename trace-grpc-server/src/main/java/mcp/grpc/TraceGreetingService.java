@@ -13,7 +13,6 @@ public class TraceGreetingService extends GreetingServiceGrpc.GreetingServiceImp
 
     @Override
     public void sayHi(Empty request, StreamObserver<Greeting> responseObserver) {
-        log.info("sayHi");
         responseObserver.onNext(
                 Greeting
                         .newBuilder()

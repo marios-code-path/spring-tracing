@@ -9,20 +9,22 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-import javax.annotation.PostConstruct;
-import java.util.Optional;
-
 @Profile("web")
 @Configuration
 public class WebTracingConfiguration extends WebMvcConfigurerAdapter {
     private HttpTracing tracing;
+    private RestTemplateBuilder restTemplateBuilder;
 
-    public WebTracingConfiguration(HttpTracing tracing) {
+    public WebTracingConfiguration(HttpTracing tracing, RestTemplateBuilder restTemplateBuilder) {
         this.tracing = tracing;
+        this.restTemplateBuilder = restTemplateBuilder;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(TracingHandlerInterceptor.create(tracing));
+        restTemplateBuilder.additionalInterceptors(
+                TracingClientHttpRequestInterceptor.create(tracing)
+        );
     }
 }

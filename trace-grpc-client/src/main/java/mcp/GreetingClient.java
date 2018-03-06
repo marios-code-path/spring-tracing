@@ -27,13 +27,11 @@ public class GreetingClient {
             greetingServiceBlockingStub;
 
     public Greeting hi() {
-        log.info("GRPC-HI");
         return greetingServiceBlockingStub.sayHi(Empty.newBuilder().build());
     }
 
     public Greeting greeting(String name) {
 
-        log.info("GRPC-GREETING");
         Greet greeting = Greet
                 .newBuilder()
                 .setName(name)
