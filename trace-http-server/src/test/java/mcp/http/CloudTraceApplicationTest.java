@@ -1,4 +1,4 @@
-package mcp.cloudtrace;
+package mcp.http;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;

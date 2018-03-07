@@ -1,4 +1,4 @@
-package mcp.cloudtrace;
+package mcp.http;
 
 import mcp.GreetingClient;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -23,6 +23,21 @@ class TracingRestController {
 
     @GetMapping("/backend")
     public String backend(HttpServletRequest req) {
+        String clientId = Optional
+                .ofNullable(req.getHeader("client-id")).orElse("");
+
+        log.info("header client-id = " + clientId);
+        return "Greetings, " + clientId;
+    }
+
+    @GetMapping("/frontend")
+    public String frontend() {
+        return restTemplatebuilder.build()
+                .getForObject("http://localhost:8080/backend", String.class);
+    }
+
+    @GetMapping("/backend-grpc")
+    public String backendGrpc(HttpServletRequest req) {
         Optional<String> maybeClientId = Optional.ofNullable(req.getHeader("client-id"));
         String clientId = maybeClientId.orElse("");
 
@@ -30,9 +45,9 @@ class TracingRestController {
         return greetingClient.greeting(clientId).getHello();
     }
 
-    @GetMapping("/frontend")
-    public String frontend() {
+    @GetMapping("/frontend-grpc")
+    public String frontendGrpc() {
         return restTemplatebuilder.build()
-                .getForObject("http://localhost:8080/backend", String.class);
+                .getForObject("http://localhost:8080/backend-grpc", String.class);
     }
 }

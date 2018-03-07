@@ -29,11 +29,10 @@
     </properties>
 
     <modules>
-	<module>trace-configuration</module>
-        <module>trace-grpc-server</module>
+	    <module>trace-configuration</module>
         <module>trace-grpc-client</module>
-	<module>trace-http-server</module>
-        <!--<module>trace-finagle</module>-->
+        <module>trace-grpc-server</module>
+	    <module>trace-http-server</module>
     </modules>
 
 

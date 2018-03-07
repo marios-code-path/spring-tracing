@@ -8,8 +8,8 @@ import mcp.GreetingServiceGrpc;
 import org.lognet.springboot.grpc.GRpcService;
 
 @GRpcService
-public class TraceGreetingService extends GreetingServiceGrpc.GreetingServiceImplBase {
-    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TraceGreetingService.class);
+public class GreetingService extends GreetingServiceGrpc.GreetingServiceImplBase {
+    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GreetingService.class);
 
     @Override
     public void sayHi(Empty request, StreamObserver<Greeting> responseObserver) {

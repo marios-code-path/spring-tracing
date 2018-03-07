@@ -34,98 +34,37 @@ have included an ASCII diagram from https://github.com/openzipkin/zipkin[openzip
 │                       │                                       │                       │
 └────────────────-----──┘                                       └───────────────-----───┘
 ```
-
+An upstream HTTP call with https://github.com/openzipkin/b3-propagation[B3Propagation]. 
+At this time of writing, B3 propagation is supported for HTTP and gRPC. We will utilize both
+methods in this example.
 
 == Starting up the app
-Generate  a new Spring application with the dependencies for Web and  Lombok. Use this link to generate a http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[new project from the Spring Initializr (http://start.spring.io)]. We'll stand up a REST  API with two  endpoints. One endpoint will call the other. We'll use the Spring Framework `RestTemplate`  to make HTTP calls. In this trivial example, we'll have one service call another on the same node, but the principles applies to as many nodes as we'd like. 
+Generate  a new Spring application with the dependencies for Web and Lombok. Use this link to generate a http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[new project from the Spring Initializr (http://start.spring.io)]. We'll stand up a REST  API with two  endpoints. One endpoint will call the other. We'll use the Spring Framework `RestTemplate`  to make HTTP calls. In this trivial example, we'll have one service call another on the same node, but the principles applies to as many nodes as we'd like. 
+This first application will only log trace data at the server ingress point. It demonstrates
+the minimal requirements to get started with trace instrumentation.
 
-.TracingApplication
+To start, we need to configure a `brave.Tracing` bean into our application context.
+This bean is responsible for providing application-specific trace functionality
+within the zipkin trace instrumentation API. It serves as the server-specific configuration
+bean for our running node.
+
+Because we are using SLF4j - that implements it's own version of Managed Diagnostic Context (MDC). 
+Thus, `brave.context.slf4j.MDCCurrentTraceContext` is a ready-made Trace Context that 
+will expose current trace and span ID's to SLF4j as logging properties with the given
+names: `traceId, spanId, parentId`. If you are using log4j2 instead, then a provided
+class `brave.context.log4j2.ThreadContextCurrentTraceContext` will do the same for
+log4j2's `ThreadContext`.
+
+.TracingConfiguration.java
 [source,java]
 ----
-@SpringBootApplication
-public class TracingApplication {
-	public static void main(String[] args) {
-		SpringApplication.run(TracingApplication.class, args);
-	}
-}
-
 @Configuration
-class TracingConfiguration {
-	@Bean
-	RestTemplate restTemplate() {
-		return new RestTemplate(); 
-	}
-}
-
-@RestController
-class TracingRestController {
-	private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TracingRestController.class);
-	private final RestTemplate restTemplate;
-
-	public TracingRestController(RestTemplate rt) {
-		this.restTemplate = rt;
-	}
-
-	@GetMapping("/backend")
-	public String deviceNames(HttpServletRequest req) {
-		String clientId = req.getHeader("client-id");
-		log.info("clientId=" + clientId);
-		return "Hello, " + clientId;
-	}
-
-	@GetMapping("/frontend")
-	public String callBackend() {
-		return restTemplate.getForObject("http://localhost:8080/backend", String.class);
-	}
-}
-----
-
-Configure the logger and give this node a name. 
-
-.application.properties
-[source,script]
-----
-logging.pattern.level=%d{ABSOLUTE} [%X{traceId}/%X{spanId}] %-5p [%t] %C{2} - %m%n
-logging.level.root=off
-logging.level.mcp.cloudtrace=info
-
-spring.application.name=spring-tracing
-----
-
-Start the server by running `mvn spring-boot:run` at the command line in the directory of the project or just rain the main class in your favorite IDE. Try accessing `localhost:8080/frontend` first. Then switch to your server terminal and
-observe the logs:
-
-.log_output_notrace
-[source,text]
-----
-...
-2018-02-28 18:25:48.531 2018-02-28 18:25:48,531 [/] INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=null
- 30145 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=null
-...
-----
-
-== Adding Trace/Span to the service
-Notice that `%TraceId/%SpanId` are not being filled in yet.  Lets fix that by
-registering an `org.springframework.web.servlet.HandlerInterceptor` that exhibits
-trace instrumentation. It will add the span/trace ids for visibility in loggin.
-Use the provided `brave.spring.webmvc.TracingHandlerInterceptor` class for tracing
-Spring WEB/MVC/REST endpoints. To configure the interceptor, we will need to customize
-MVC using a `org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter` 
-(or alternately use `WebMvcConfigurer` when using Spring 5.0 or more).
-
-.TraceServiceOnlyConfiguration
-[source,java]
-----
-public class TraceServiceOnlyConfiguration {
+public class TracingLogOnlyConfiguration {
     @Bean
-    RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-
-    @Bean
-    Tracing simpleTracing() {
+    Tracing tracing() {
         return Tracing.newBuilder()
                 .currentTraceContext((MDCCurrentTraceContext.create()))
+                .spanReporter(Reporter.CONSOLE)
                 .build();
     }
 
@@ -133,57 +72,124 @@ public class TraceServiceOnlyConfiguration {
     HttpTracing httpTracing(Tracing tracing) {
         return HttpTracing.create(tracing);
     }
-	
-    @Configuration
-    public static class WebTracingConfiguration extends WebMvcConfigurerAdapter {
-        private final HttpTracing httpTracing;
-        public WebTracingConfiguration(HttpTracing tracing) {
-            this.httpTracing = tracing;
-        }
-        @Override
-        public void addInterceptors(InterceptorRegistry registry) {
-            registry.addInterceptor(TracingHandlerInterceptor.create(httpTracing));
-        }
+}
+----
+
+This is the REST controller that will let us make requests to our contrived application.
+
+.RestController.java
+[source,java]
+----
+@RestController
+class TracingRestController {
+    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TracingRestController.class);
+
+    private final RestTemplateBuilder restTemplatebuilder;
+
+    TracingRestController(RestTemplateBuilder builder) {
+        this.restTemplatebuilder = builder;
+    }
+
+    @GetMapping("/backend")
+    public String backend(HttpServletRequest req) {
+        String clientId = Optional
+                .ofNullable(req.getHeader("client-id")).orElse("");
+        log.info("header client-id = " + clientId);
+        return greetingClient.greeting(clientId).getHello();
+    }
+
+    @GetMapping("/frontend")
+    public String frontend() {
+        return restTemplatebuilder.build()
+                .getForObject("http://localhost:8080/backend", String.class);
+    }
+----
+
+The application bootstrap with `@SpringBootApplication` annotation which will make 
+execution super simple.
+
+.TracingApplication.java
+[source,java]
+----
+@SpringBootApplication
+public class TracingApplication {
+    @Autowired
+    RestTemplateBuilder restTemplateBuilder;
+
+    public static void main(String[] args) {
+        SpringApplication.run(TracingApplication.class, args);
+    }
+}
+
+----
+Configure the logger and give this node a name. 
+
+.application.properties
+[source,script]
+----
+logging.pattern.level=%d{ABSOLUTE} [%X{traceId}/%X{spanId}] %-5p [%t] %C{2} - %m%n
+logging.level.root=info
+logging.level.mcp.cloudtrace=info
+
+spring.application.name=spring-tracing-http
+----
+
+Start the server and invoke the `/frontend` endpoint.
+
+.invoke_log_only
+[source,shell]
+----
+$ mvn spring-boot:run -Dspring.active.profiles=log,web
+  ..... logging ....
+# In another Terminal:
+$ curl -H "client-id: tracing" http://localhost:8080/frontend  
+----
+
+
+.log_output_notrace
+[source,text]
+----
+...
+2018-03-06 17:51:19.409 2018-03-06 17:51:19,409 [796133ca413bf4f9/796133ca413bf4f9]  INFO  [http-nio-8080-exec-5] m.h.TracingRestController - header client-id =
+ 12686 --- [nio-8080-exec-5] mcp.http.TracingRestController           : header client-id =
+{"traceId":"796133ca413bf4f9","id":"796133ca413bf4f9","kind":"SERVER","name":"get /backend","timestamp":1520387479409105,"duration":1680,"localEndpoint":{"serviceName":"unknown","ipv4":"172.20.10.4"},"remoteEndpoint":{"ipv4":"127.0.0.1","port":60300},"tags":{"http.method":"GET","http.path":"/backend"}}
+{"traceId":"4d8b30b495cbf3e5","id":"4d8b30b495cbf3e5","kind":"SERVER","name":"get /frontend","timestamp":1520387479392157,"duration":20559,"localEndpoint":{"serviceName":"unknown","ipv4":"172.20.10.4"},"remoteEndpoint":{"ipv6":"::1","port":60299},"tags":{"http.method":"GET","http.path":"/frontend"}}
+...
+----
+
+Notice that `%TraceId/%SpanId` are the same? Thats because each commponent in the trace
+path is not receiving a Trace Context. Lets fix that by registering an implementation of `org.springframework.web.servlet.HandlerInterceptor` that exhibits Zipkin trace instrumentation to SpringMVC.
+
+To instrument SpringMVC endpoints, we will need to configure an instance of the `brave.spring.webmvc.TracingHandlerInterceptor` class. To configure the interceptor, we will need to register a `org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter` that gives us hooks into SpringMVC's `InterceptorRegistry` (or alternately use `WebMvcConfigurer` when using Spring 5.0 or more).
+
+.TraceServiceOnlyConfiguration
+[source,java]
+----
+@Configuration
+public class WebTracingConfiguration extends WebMvcConfigurerAdapter {
+    private HttpTracing tracing;
+    private RestTemplateBuilder restTemplateBuilder;
+
+    public WebTracingConfiguration(HttpTracing tracing, RestTemplateBuilder restTemplateBuilder) {
+        this.tracing = tracing;
+        this.restTemplateBuilder = restTemplateBuilder;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(TracingHandlerInterceptor.create(tracing));
+        restTemplateBuilder.additionalInterceptors(
+                TracingClientHttpRequestInterceptor.create(tracing)
+        );
     }
 }
 ----
 
-This interceptor receives an `HttpTracing` object which has the job of not/activating a
-new trace, handling any custom trace-scoped needs like propigation and Trace 
-Context commuting.
-
-Because we are using SLF4j - that implements it's own version of Managed Diagnostic Context (MDC). 
-Thus, `brave.context.slf4j.MDCCurrentTraceContext` is a ready-made Trace Context that 
-will expose current trace and span ID's to SLF4j as logging properties with the given
-names: `traceId, spanId, parentId`. If you are using log4j2 instead, then a provided
-class `brave.context.log4j2.ThreadContextCurrentTraceContext` will do the same for
-log4j2's ThreadContext.
-
-Restart your spring-boot application, and then invoke `/frontend` using an http fetching
-tool, and observe server logs to confirm that you get `traceId` and `spanId` filled into 
-INFO logs.
-
-[source,bash]
-----
-$ curl -H "client-id: foo" http://localhost:8080/frontend
-----
-
-.traced_output
-[source,text]
-----
-2018-02-28 18:49:51.200 2018-02-28 18:49:51,200 [6b5e99f057da5abd/1239a4f2e354ecdf] INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=null
- 37142 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=null
-----
-
+This interceptor receives an `HttpTracing` object which gives our `Tracing` bean
+the utility to introspect and modify HTTP client/server fields.
 
 == Tracing across service boundaries
-The above example is so far limited in repect to downstream communication. We 
-want to enable trace context propagation across service boundaries.  
-In this section we'll go into HTTP client-side trace instrumention. 
-
-Clients requests originating from the server will need a trace context. 
-The downstream HTTP call will encode using https://github.com/openzipkin/b3-propagation[B3Propagation] it's context as request headers. 
-In order to apply this behaviour to our `restTemplate` we must provide -like the server 
+In order to apply Trace Context propagation to our `restTemplate` we must provide -like the server 
 setup- an `org.springframework.http.client.ClientHttpRequestInterceptor` to do the 
 client-side tracing work.
 

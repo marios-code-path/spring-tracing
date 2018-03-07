@@ -39,7 +39,6 @@ class TracingShipToZipkinConfiguration {
      */
     @Bean
     AsyncReporter<Span> spanReporter(Sender sender) {
-
         return AsyncReporter.create(sender);
     }
 
