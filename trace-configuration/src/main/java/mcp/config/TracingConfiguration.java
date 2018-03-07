@@ -2,6 +2,7 @@ package mcp.config;
 
 import brave.Tracing;
 import brave.context.slf4j.MDCCurrentTraceContext;
+import brave.http.HttpTracing;
 import brave.propagation.B3Propagation;
 import brave.propagation.ExtraFieldPropagation;
 import brave.sampler.Sampler;
@@ -32,5 +33,10 @@ public class TracingConfiguration {
     @Bean
     RestTemplateBuilder restTemplateBuilder() {
         return new RestTemplateBuilder();
+    }
+
+    @Bean
+    HttpTracing httpTracing(Tracing tracing) {
+        return HttpTracing.create(tracing);
     }
 }

@@ -1,7 +1,5 @@
 package mcp.config;
 
-import brave.Tracing;
-import brave.http.HttpTracing;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,8 +31,4 @@ public class TracingShipToKafkaConfiguration {
         return AsyncReporter.create(sender);
     }
 
-    @Bean
-    HttpTracing httpTracing(Tracing tracing) {
-        return HttpTracing.create(tracing);
-    }
 }

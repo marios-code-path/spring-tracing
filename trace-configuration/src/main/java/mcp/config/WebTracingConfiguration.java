@@ -1,5 +1,6 @@
 package mcp.config;
 
+import brave.Tracing;
 import brave.http.HttpTracing;
 import brave.spring.web.TracingClientHttpRequestInterceptor;
 import brave.spring.webmvc.TracingHandlerInterceptor;
@@ -12,19 +13,24 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @Profile("web")
 @Configuration
 public class WebTracingConfiguration extends WebMvcConfigurerAdapter {
-    private HttpTracing tracing;
-    private RestTemplateBuilder restTemplateBuilder;
+    private HttpTracing httpTracing;
 
-    public WebTracingConfiguration(HttpTracing tracing, RestTemplateBuilder restTemplateBuilder) {
-        this.tracing = tracing;
-        this.restTemplateBuilder = restTemplateBuilder;
+    public WebTracingConfiguration(Tracing tracing) {
+        this.httpTracing = HttpTracing.create(tracing);
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(TracingHandlerInterceptor.create(tracing));
-        restTemplateBuilder.additionalInterceptors(
-                TracingClientHttpRequestInterceptor.create(tracing)
-        );
+        registry.addInterceptor(TracingHandlerInterceptor.create(httpTracing));
+    }
+}
+
+@Configuration
+class WebClientTracingConfiguration {
+
+    WebClientTracingConfiguration(HttpTracing tracing,
+                                  RestTemplateBuilder restTemplateBuilder) {
+        restTemplateBuilder
+                .additionalInterceptors(TracingClientHttpRequestInterceptor.create(tracing));
     }
 }
