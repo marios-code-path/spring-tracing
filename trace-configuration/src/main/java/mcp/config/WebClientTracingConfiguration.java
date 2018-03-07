@@ -11,10 +11,15 @@ import org.springframework.context.annotation.Profile;
 @Configuration
 class WebClientTracingConfiguration {
 
-    WebClientTracingConfiguration(Tracing tracing,
-                                  RestTemplateBuilder restTemplateBuilder) {
+    public WebClientTracingConfiguration(Tracing tracing,
+                                         RestTemplateBuilder restTemplateBuilder) {
         restTemplateBuilder
-                .additionalInterceptors(TracingClientHttpRequestInterceptor.create(
-                        HttpTracing.create(tracing)));
+                .additionalInterceptors
+                        (
+                            TracingClientHttpRequestInterceptor
+                                .create(HttpTracing
+                                        .create(tracing)
+                                )
+                        );
     }
 }
