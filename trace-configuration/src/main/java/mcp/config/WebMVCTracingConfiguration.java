@@ -12,10 +12,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 
 @Profile("web")
 @Configuration
-public class WebTracingConfiguration extends WebMvcConfigurerAdapter {
+public class WebMVCTracingConfiguration extends WebMvcConfigurerAdapter {
     private HttpTracing httpTracing;
 
-    public WebTracingConfiguration(Tracing tracing) {
+    public WebMVCTracingConfiguration(Tracing tracing) {
         this.httpTracing = HttpTracing.create(tracing);
     }
 
@@ -25,12 +25,3 @@ public class WebTracingConfiguration extends WebMvcConfigurerAdapter {
     }
 }
 
-@Configuration
-class WebClientTracingConfiguration {
-
-    WebClientTracingConfiguration(HttpTracing tracing,
-                                  RestTemplateBuilder restTemplateBuilder) {
-        restTemplateBuilder
-                .additionalInterceptors(TracingClientHttpRequestInterceptor.create(tracing));
-    }
-}
