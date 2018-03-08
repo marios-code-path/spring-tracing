@@ -15,7 +15,6 @@ public class WebMVCTracingConfiguration extends WebMvcConfigurerAdapter {
         this.httpTracing = httpTracing;
     }
 
-
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(TracingHandlerInterceptor.create(httpTracing));

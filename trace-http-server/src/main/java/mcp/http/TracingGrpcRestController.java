@@ -29,12 +29,13 @@ public class TracingGrpcRestController {
                 .ofNullable(req.getHeader("client-id"))
                 .orElse("none");
 
-        log.info("header client-id = " + clientId);
+        log.info("backend/client-id = " + clientId);
         return greetingClient.greeting(clientId).getHello();
     }
 
     @GetMapping("/frontend")
-    public String frontend() {
+    public String frontend()
+    {
         return restTemplate
                 .getForObject("http://localhost:8080/backend", String.class);
     }
