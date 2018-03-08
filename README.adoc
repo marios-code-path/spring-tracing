@@ -58,6 +58,7 @@ log4j2's `ThreadContext`.
 .TracingConfiguration.java
 [source,java]
 ----
+@Profile("console")
 @Configuration
 public class TracingLogOnlyConfiguration {
     @Bean
@@ -80,22 +81,18 @@ This is the REST controller that will let us make requests to our contrived appl
 .RestController.java
 [source,java]
 ----
+@Profile("web")
 @RestController
-class TracingRestController {
-    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TracingRestController.class);
-
+public class TracingRestController {
     private final RestTemplateBuilder restTemplatebuilder;
 
-    TracingRestController(RestTemplateBuilder builder) {
-        this.restTemplatebuilder = builder;
+    TracingRestController(RestTemplateBuilder restTemplatebuilder) {
+        this.restTemplatebuilder = restTemplatebuilder;
     }
 
     @GetMapping("/backend")
-    public String backend(HttpServletRequest req) {
-        String clientId = Optional
-                .ofNullable(req.getHeader("client-id")).orElse("");
-        log.info("header client-id = " + clientId);
-        return greetingClient.greeting(clientId).getHello();
+    public String backend() {
+        return "Greetings";
     }
 
     @GetMapping("/frontend")
@@ -103,6 +100,7 @@ class TracingRestController {
         return restTemplatebuilder.build()
                 .getForObject("http://localhost:8080/backend", String.class);
     }
+}
 ----
 
 The application bootstrap with `@SpringBootApplication` annotation which will make 
@@ -142,11 +140,11 @@ Start the server and invoke the `/frontend` endpoint.
 $ mvn spring-boot:run -Dspring.active.profiles=log,web
   ..... logging ....
 # In another Terminal:
-$ curl -H "client-id: tracing" http://localhost:8080/frontend  
+$ curl -H "client-id: tracing" http://localhost:8080/frontend
+Greeting
 ----
 
-
-.log_output_notrace
+.server_side_console
 [source,text]
 ----
 ...
@@ -158,68 +156,53 @@ $ curl -H "client-id: tracing" http://localhost:8080/frontend
 ----
 
 Notice that `%TraceId/%SpanId` are the same? Thats because each commponent in the trace
-path is not receiving a Trace Context. Lets fix that by registering an implementation of `org.springframework.web.servlet.HandlerInterceptor` that exhibits Zipkin trace instrumentation to SpringMVC.
+path is not receiving a trace context from the previous hop. Lets fix that by registering an implementation of `org.springframework.web.servlet.HandlerInterceptor` that exhibits Zipkin trace instrumentation to SpringMVC.
 
 To instrument SpringMVC endpoints, we will need to configure an instance of the `brave.spring.webmvc.TracingHandlerInterceptor` class. To configure the interceptor, we will need to register a `org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter` that gives us hooks into SpringMVC's `InterceptorRegistry` (or alternately use `WebMvcConfigurer` when using Spring 5.0 or more).
 
-.TraceServiceOnlyConfiguration
+.WebMvcConfiguration
 [source,java]
 ----
+@Profile("web")
 @Configuration
-public class WebTracingConfiguration extends WebMvcConfigurerAdapter {
-    private HttpTracing tracing;
-    private RestTemplateBuilder restTemplateBuilder;
+public class WebMVCTracingConfiguration extends WebMvcConfigurerAdapter {
+    private final HttpTracing httpTracing;
 
-    public WebTracingConfiguration(HttpTracing tracing, RestTemplateBuilder restTemplateBuilder) {
-        this.tracing = tracing;
-        this.restTemplateBuilder = restTemplateBuilder;
+    public WebMVCTracingConfiguration(HttpTracing httpTracing) {
+        this.httpTracing = httpTracing;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(TracingHandlerInterceptor.create(tracing));
-        restTemplateBuilder.additionalInterceptors(
-                TracingClientHttpRequestInterceptor.create(tracing)
-        );
+        registry.addInterceptor(TracingHandlerInterceptor.create(httpTracing));
     }
 }
 ----
 
 This interceptor receives an `HttpTracing` object which gives our `Tracing` bean
-the utility to introspect and modify HTTP client/server fields.
+the functionality to apply HTTP client/server tracing.
 
-== Tracing across service boundaries
+== Tracing the Client
 In order to apply Trace Context propagation to our `restTemplate` we must provide -like the server 
 setup- an `org.springframework.http.client.ClientHttpRequestInterceptor` to do the 
-client-side tracing work.
+client-side tracing work. We'll use the `RestTemplateCustomizer` callback interface
+to modify the RestTemplate bean we defined earlier.
 
-Additionally, we want to know which client-id was seen during a trace. 
-Brave provides the `ExtraFieldPropagation` class to support comprehensive
-use of add-on properties.  Although it intrusive as each trace will get laden
-with additional data, however it is useful where there are client concerns
-to analyze in a trace path.
-
-.TracingClientServiceConfiguration
-[source, java]
+.TraceClientConfiguration
+[source,java]
 ----
-    @Bean
-    RestTemplate restTemplate(HttpTracing tracing) {
-        return new RestTemplateBuilder()
-                .interceptors(TracingClientHttpRequestInterceptor.create(tracing))
-                .build();
-    }
+@Profile("web")
+@Configuration
+class WebClientTracingConfiguration {
 
     @Bean
-    Tracing tracing(@Value("${mcp:spring-tracing}") String serviceName) {
-        return Tracing
-                .newBuilder()
-                .sampler(Sampler.ALWAYS_SAMPLE)
-                .localServiceName(serviceName)
-                .propagationFactory(ExtraFieldPropagation
-                        .newFactory(B3Propagation.FACTORY, "client-id"))
-                .currentTraceContext(MDCCurrentTraceContext.create())
-                .build();
+    public RestTemplateCustomizer restTemplateCustomizer(HttpTracing tracing) {
+        return restTemplate -> restTemplate
+                .setInterceptors(Arrays
+                        .asList(TracingClientHttpRequestInterceptor.create(tracing)
+                ));
     }
+}
 ----
 
 .trace_propagated_output

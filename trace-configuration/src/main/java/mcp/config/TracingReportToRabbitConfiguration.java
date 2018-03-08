@@ -7,26 +7,35 @@ import org.springframework.context.annotation.Profile;
 import zipkin2.Span;
 import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.Sender;
-import zipkin2.reporter.okhttp3.OkHttpSender;
+import zipkin2.reporter.amqp.RabbitMQSender;
 
-@Profile({"zipkin"})
+import java.io.IOException;
+
+@Profile("rabbit")
 @Configuration
-class TracingShipToZipkinConfiguration {
-
+public class TracingReportToRabbitConfiguration {
     /**
-     * Configuration for how to send spans to directly to Zipkin
+     * Configuration for sending spans to RabbitMQ
      */
     @Bean
-    Sender sender(@Value("${mcp.zipkin.url}") String zipkinSenderUrl) {
-        return OkHttpSender.create(zipkinSenderUrl);
-    }
+    Sender sender(@Value("${mcp.rabbit.url}") String rabbitmqHostUrl,
+                  @Value("${mcp.rabbit.queue}") String zipkinQueue) throws IOException {
+        RabbitMQSender sender;
 
+        sender = RabbitMQSender.newBuilder()
+                .queue(zipkinQueue)
+                .addresses(rabbitmqHostUrl).build();
+
+        return sender;
+    }
 
     /**
      * Configuration for how to buffer spans into messages for Zipkin
      */
     @Bean
     AsyncReporter<Span> spanReporter(Sender sender) {
+
         return AsyncReporter.create(sender);
     }
+
 }

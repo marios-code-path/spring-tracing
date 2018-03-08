@@ -6,6 +6,7 @@ import mcp.Greet;
 import mcp.Greeting;
 import mcp.GreetingServiceGrpc;
 import org.lognet.springboot.grpc.GRpcService;
+import org.springframework.context.annotation.Profile;
 
 @GRpcService
 public class GreetingService extends GreetingServiceGrpc.GreetingServiceImplBase {

@@ -11,9 +11,9 @@ import zipkin2.reporter.kafka11.KafkaSender;
 
 import java.io.IOException;
 
-@Profile({"kafka"})
+@Profile("kafka")
 @Configuration
-public class TracingShipToKafkaConfiguration {
+public class TracingReportToKafkaConfiguration {
     /**
      * Configuration for sending spans to Kafka
      */

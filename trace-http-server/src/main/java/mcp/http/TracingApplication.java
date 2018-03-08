@@ -1,9 +1,7 @@
 package mcp.http;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 
@@ -11,12 +9,9 @@ import org.springframework.web.client.RestTemplate;
 @SpringBootApplication(scanBasePackages = {"mcp"})
 public class TracingApplication {
 
-    @Autowired
-    RestTemplateBuilder restTemplateBuilder;
-
     @Bean
     RestTemplate restTemplate() {
-        return restTemplateBuilder.build();
+        return new RestTemplate();
     }
 
     public static void main(String[] args) {

@@ -1,25 +1,22 @@
 package mcp.config;
 
-import brave.Tracing;
 import brave.http.HttpTracing;
 import brave.spring.web.TracingClientHttpRequestInterceptor;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.web.client.RestTemplateCustomizer;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-@Profile("web")
+import java.util.Arrays;
+
 @Configuration
 class WebClientTracingConfiguration {
 
-    public WebClientTracingConfiguration(Tracing tracing,
-                                         RestTemplateBuilder restTemplateBuilder) {
-        restTemplateBuilder
-                .additionalInterceptors
-                        (
-                            TracingClientHttpRequestInterceptor
-                                .create(HttpTracing
-                                        .create(tracing)
-                                )
-                        );
+    @Bean
+    public RestTemplateCustomizer restTemplateCustomizer(HttpTracing tracing) {
+        return restTemplate -> restTemplate
+                .setInterceptors(Arrays
+                        .asList(TracingClientHttpRequestInterceptor.create(tracing)
+                ));
     }
 }

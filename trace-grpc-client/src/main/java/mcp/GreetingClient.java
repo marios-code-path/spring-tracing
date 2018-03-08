@@ -3,11 +3,13 @@ package mcp;
 import io.grpc.ManagedChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 
-@Service
+@Component
 public class GreetingClient {
 
     private final ManagedChannel managedChannel;
@@ -21,14 +23,8 @@ public class GreetingClient {
         greetingServiceBlockingStub = GreetingServiceGrpc.newBlockingStub(managedChannel);
     }
 
-    Logger log = LoggerFactory.getLogger(GreetingClient.class);
-
     private GreetingServiceGrpc.GreetingServiceBlockingStub
             greetingServiceBlockingStub;
-
-    public Greeting hi() {
-        return greetingServiceBlockingStub.sayHi(Empty.newBuilder().build());
-    }
 
     public Greeting greeting(String name) {
 
