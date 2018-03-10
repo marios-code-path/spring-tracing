@@ -12,16 +12,6 @@ public class GrpcService extends GreetingServiceGrpc.GreetingServiceImplBase {
     private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GrpcService.class);
 
     @Override
-    public void sayHi(Empty request, StreamObserver<Greeting> responseObserver) {
-        responseObserver.onNext(
-                Greeting
-                        .newBuilder()
-                        .setHello("hello")
-                        .build());
-        responseObserver.onCompleted();
-    }
-
-    @Override
     public void greeting(Greet request, StreamObserver<Greeting> responseObserver) {
         log.info("Greetings, " + request.getName());
         responseObserver.onNext(
@@ -31,5 +21,4 @@ public class GrpcService extends GreetingServiceGrpc.GreetingServiceImplBase {
                         .build());
         responseObserver.onCompleted();
     }
-
 }

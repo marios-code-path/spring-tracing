@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication(scanBasePackages = {"mcp", "mcp.grpc"})
 public class GrpcServiceApplication {
-
     @Bean
     @GRpcGlobalInterceptor
     ServerInterceptor serverInterceptor(GrpcTracing grpcTracing) {

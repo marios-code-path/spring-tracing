@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-public class TracingGrpcClientConfiguration {
+public class TracingGrpcConfiguration {
 
     @Bean
     public GrpcTracing grpcTracing(Tracing tracing) {

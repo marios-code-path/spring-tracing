@@ -35,7 +35,7 @@ have included an ASCII diagram from https://github.com/openzipkin/zipkin[openzip
 └────────────────-----──┘                                       └───────────────-----───┘
 ```
 An upstream HTTP call with https://github.com/openzipkin/b3-propagation[B3Propagation]. 
-At this time of writing, B3 propagation is supported for HTTP and gRPC. We will utilize both
+At this time of writing, B3 propagation is supported for Finagle, HTTP and gRPC. We will utilize both
 methods in this example.
 
 == Starting up the app
@@ -43,29 +43,24 @@ Generate  a new Spring application with the dependencies for Web and Lombok. Use
 This first application will only log trace data at the server ingress point. It demonstrates
 the minimal requirements to get started with trace instrumentation.
 
-To start, we need to configure a `brave.Tracing` bean into our application context.
-This bean is responsible for providing application-specific trace functionality
-within the zipkin trace instrumentation API. It serves as the server-specific configuration
-bean for our running node.
-
-Because we are using SLF4j - that implements it's own version of Managed Diagnostic Context (MDC). 
-Thus, `brave.context.slf4j.MDCCurrentTraceContext` is a ready-made Trace Context that 
-will expose current trace and span ID's to SLF4j as logging properties with the given
-names: `traceId, spanId, parentId`. If you are using log4j2 instead, then a provided
-class `brave.context.log4j2.ThreadContextCurrentTraceContext` will do the same for
-log4j2's `ThreadContext`.
+To start, we need to configure a `brave.Tracing` bean into our application context. This will provide application-specific (this example's) trace functionality within the zipkin trace instrumentation API. It serves as the server-specific configuration bean for our running node.
 
 .TracingConfiguration.java
 [source,java]
 ----
-@Profile("console")
 @Configuration
-public class TracingLogOnlyConfiguration {
+public class TracingConfiguration {
     @Bean
-    Tracing tracing() {
-        return Tracing.newBuilder()
-                .currentTraceContext((MDCCurrentTraceContext.create()))
-                .spanReporter(Reporter.CONSOLE)
+    Tracing tracing(@Value("${spring.application.name:spring-tracing}") String serviceName,
+                    Reporter<Span> spanReporter) {
+        return Tracing
+                .newBuilder()
+                .sampler(Sampler.ALWAYS_SAMPLE)
+                .localServiceName(serviceName)
+                .propagationFactory(ExtraFieldPropagation
+                        .newFactory(B3Propagation.FACTORY, "client-id"))
+                .currentTraceContext(MDCCurrentTraceContext.create())
+                .spanReporter(spanReporter)
                 .build();
     }
 
@@ -76,7 +71,45 @@ public class TracingLogOnlyConfiguration {
 }
 ----
 
-This is the REST controller that will let us make requests to our contrived application.
+==== Logging configuration
+Because we are using SLF4j - that implements it's own version of Managed Diagnostic Context (MDC). 
+Thus, `brave.context.slf4j.MDCCurrentTraceContext` is a ready-made Trace Context that 
+will expose current trace and span ID's to SLF4j as logging properties with the given
+names: `traceId, spanId, parentId`. If you are using log4j2 instead, then a provided
+class `brave.context.log4j2.ThreadContextCurrentTraceContext` will do the same for
+log4j2's `ThreadContext`.
+
+=== Reporting Trace(s) to Zipkin server
+Spans are created in instrumentation, transported out-of-band, and eventually persisted.
+Zipkin uses Reporters `zipkin2.reporter.Reporter` to sends spans (or encoded spans) recorded
+by instrumentation out of process. There are a couple of default Reporters that do not send
+but can help with testing: `Reporter.NOOP` and `Reporter.CONSOLE`.
+
+In this case, we will configure an (ThreadSafe)`AsyncReporter` that will give us protection from
+latency or exceptions when reporting spans out of process. In order to abstract transport
+specifics, zipkin includes the `zipkin2.reporter.Sender` component to encode and trasmit 
+spans out of process.
+
+.ReportToZipkinConfiguratin.java
+[source,java]
+----
+@Profile("zipkin")
+@Configuration
+class TracingReportToZipkinConfiguration {
+    @Bean
+    Sender sender(@Value("${mcp.zipkin.url}") String zipkinSenderUrl) {
+        return OkHttpSender.create(zipkinSenderUrl);
+    }
+
+    @Bean
+    AsyncReporter<Span> spanReporter(Sender sender) {
+        return AsyncReporter.create(sender);
+    }
+}
+----
+
+== Exposing the service
+This is the REST controller that will let us make requests to our test application.
 
 .RestController.java
 [source,java]
@@ -134,10 +167,10 @@ spring.application.name=spring-tracing-http
 
 Start the server and invoke the `/frontend` endpoint.
 
-.invoke_log_only
+.invoke_with_zipkin_trace
 [source,shell]
 ----
-$ mvn spring-boot:run -Dspring.active.profiles=log,web
+~/spring-tracing/trace-http-server$ mvn spring-boot:run -Dspring.active.profiles=zipkin
   ..... logging ....
 # In another Terminal:
 $ curl -H "client-id: tracing" http://localhost:8080/frontend
@@ -163,7 +196,6 @@ To instrument SpringMVC endpoints, we will need to configure an instance of the 
 .WebMvcConfiguration
 [source,java]
 ----
-@Profile("web")
 @Configuration
 public class WebMVCTracingConfiguration extends WebMvcConfigurerAdapter {
     private final HttpTracing httpTracing;
@@ -179,28 +211,24 @@ public class WebMVCTracingConfiguration extends WebMvcConfigurerAdapter {
 }
 ----
 
-This interceptor receives an `HttpTracing` object which gives our `Tracing` bean
-the functionality to apply HTTP client/server tracing.
+This interceptor receives an `HttpTracing` bean which gives our `Tracing` bean
+the functionality to apply HTTP specifics to client/server tracing instrumentation.
 
-== Tracing the Client
+== Tracing the RestClient
 In order to apply Trace Context propagation to our `restTemplate` we must provide -like the server 
 setup- an `org.springframework.http.client.ClientHttpRequestInterceptor` to do the 
-client-side tracing work. We'll use the `RestTemplateCustomizer` callback interface
-to modify the RestTemplate bean we defined earlier.
+client-side tracing work. We'll use the `RestTemplateBuilder` component to construct an zipkin instrumented RestTemplate bean.
 
 .TraceClientConfiguration
 [source,java]
 ----
-@Profile("web")
 @Configuration
 class WebClientTracingConfiguration {
-
     @Bean
-    public RestTemplateCustomizer restTemplateCustomizer(HttpTracing tracing) {
-        return restTemplate -> restTemplate
-                .setInterceptors(Arrays
-                        .asList(TracingClientHttpRequestInterceptor.create(tracing)
-                ));
+    RestTemplate restTemplate(HttpTracing tracing) {
+        return new RestTemplateBuilder()
+                .additionalInterceptors(TracingClientHttpRequestInterceptor.create(tracing))
+                .build();
     }
 }
 ----
@@ -215,56 +243,151 @@ class WebClientTracingConfiguration {
 Now, when we call our endpoint, we should see a traceId, spanId, and our `client-id`
 as it would have commuted across the entire request chain.
 
-== Shipping traces to zipkin-server
-Usually you will want to send your trace logs to an aggregation server for monitoring.
-For example, when services do act up you'll be able to pick up which service routes
-are affected.
+== gRPC Tracing
+To expose gRPC, I use the https://github.com/LogNet/grpc-spring-boot-starter[LogNet's grpc-spring-boot-starter] module.
+This makes it much easier to manage grpc stub generation, and service configuration. 
+To get our gRPC service started, we'll need a `.proto` definition for the gRPC endpoints and data objects.
 
-There are a number of ways to get traces into OpenZipkin.  In this seciton, we will dive into 
-3 common ways to ship traces to zipkin.
+.proto_definition
+[source,grpc]
+----
+syntax = "proto3";
 
-=== Zipkin Direct via HTTP
-Spans are created in instrumentation, transported out-of-band, and eventually persisted.
-Zipkin uses Reporters `zipkin2.reporter.Reporter` to sends spans (or encoded spans) recorded
-by instrumentation out of process. There are a couple of default Reporters that do not send
-but can help with testing: `Reporter.NOOP` and `Reporter.CONSOLE`.
+option java_multiple_files = true;
+package mcp;
 
-In this case, we will configure an (ThreadSafe)`AsyncReporter` that will give us protection from
-latency or exceptions when reporting spans out of process. In order to abstract transport
-specifics, zipkin includes the `zipkin2.reporter.Sender` component to encode and trasmit 
-spans out of process.
+message Greeting {
+    string hello = 1;
+}
 
-.trace_zipkin_bound
+message Greet {
+    string name = 1;
+}
+
+message Empty {
+
+}
+
+service GreetingService {
+    rpc greeting(Greet) returns (Greeting);
+}
+----
+
+==== Generating the gRPC service
+The details of standing up and setting up dependencies is outside of the scope of this article.  Further dependency details 
+are found in [grpc-server/pom.xml]. You will want a new project setup with all of the `lognet` and `io.grpc` dependencies and build plugins. 
+Once you have this complete, you can use maven to generate sources, and expose the service.
+Below is a 'post-generated' listing of our GRPC service. 
+
+.GrpcService.java
+[source, java]
+----
+@GRpcService
+public class GrpcService extends GreetingServiceGrpc.GreetingServiceImplBase {
+    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GrpcService.class);
+
+    @Override
+    public void greeting(Greet request, StreamObserver<Greeting> responseObserver) {
+        log.info("Greetings, " + request.getName());
+        responseObserver.onNext(
+                Greeting
+                        .newBuilder()
+                        .setHello("hello " + request.getName())
+                        .build());
+        responseObserver.onCompleted();
+    }
+}
+----
+We simply apply the `org.lognet.GRpcService` annotation to mark this bean for service registration.
+
+To intercept service calls and instrument tracing, wire in a `brave.grpc.GrpcTracing` bean 
+to obtain an instance of `io.grpc.ServerInterceptor`. Use the `org.lognet.GRpcGlobalInterceptor` annotation to 
+mark the bean as an global interceptor.  This will expose tracing to all GRPC endpoints (visible on the ApplicationContext) in this service.
+
+.GrpcServerConfiguration.java
+[source,java]
+----
+@Configuration
+public class TracingGrpcServerConfiguration {
+    @Bean
+    public GrpcTracing grpcTracing(Tracing tracing) {
+        return GrpcTracing.create(tracing);
+    }
+
+    @Bean
+    @GRpcGlobalInterceptor
+    public ServerInterceptor grpcServerInterceptor(GrpcTracing grpcTracing) {
+        return grpcTracing.newServerInterceptor();
+    }
+}
+----
+
+Get this service off the ground is done a command:
+.grpcstart.shell
+[source,shell]
+----
+~/code/trace-grpc-service $ mvn spring-boot:run -Dspring.profiles.active=grpc
+... logging ...
+....
+----
+
+Should this succeed, there will be a grpc server listening on default port `6565`.
+
+== Accessing the client
+Our grpc client will be used by another project (the web server) to access the gRPC greeting service.
+
+.GrpcClient.java
+[source,java]
+----
+@Component
+public class GreetingClient {
+    private final ManagedChannel managedChannel;
+
+    public GreetingClient(ManagedChannel managedChannel) {
+        this.managedChannel = managedChannel;
+    }
+
+    @PostConstruct
+    private void initializeClient() {
+        greetingServiceBlockingStub = GreetingServiceGrpc.newBlockingStub(managedChannel);
+    }
+
+    private GreetingServiceGrpc.GreetingServiceBlockingStub
+            greetingServiceBlockingStub;
+
+    public Greeting greeting(String name) {
+
+        Greet greeting = Greet
+                .newBuilder()
+                .setName(name)
+                .build();
+
+        return greetingServiceBlockingStub.greeting(greeting);
+    }
+}
+----
+
+.GrpClientTraceConfiguration.java
 [source,java]
 ----
     @Bean
-    Sender sender(@Value("${mcp.zipkin.url}") String zipkinSenderUrl) {
-        return OkHttpSender.create(zipkinSenderUrl);
-    }
-
-    @Bean
-    AsyncReporter<Span> spanReporter(Sender sender) {
-        return AsyncReporter.create(sender);
-    }
-
-    @Bean
-    Tracing tracing(@Value("${mcp:spring-tracing}") String serviceName,
-                    AsyncReporter<Span> spanReporter) {
-        return Tracing
-                .newBuilder()
-                .sampler(Sampler.ALWAYS_SAMPLE)
-                .localServiceName(serviceName)
-                .propagationFactory(ExtraFieldPropagation
-                        .newFactory(B3Propagation.FACTORY, "client-id"))
-                .currentTraceContext(MDCCurrentTraceContext.create())
-                .spanReporter(spanReporter)
+    public ManagedChannel managedChannel(ManagedChannelBuilder channelBuilder) {
+        return channelBuilder
                 .build();
     }
-
+    @Bean
+    public ManagedChannelBuilder managedChannelBuilder(GrpcTracing grpcTracing) {
+        return ManagedChannelBuilder.forAddress("localhost", 6565)
+                .intercept(grpcTracing.newClientInterceptor())
+                .usePlaintext(true);
+    }
 ----
+For tracing to work on the client side, we must wire an `io.grpc.ManagedChannel` with an interceptor from our `grpcTracing` bean ( as with the server ).
 
-This takes care of getting traces out to zipkin.  Now we can restart our service
-make a few endpoint calls, and observe traces locally.
+== Additional Reporting Options
+Getting data reported to zipkin indirectly either via message queue or topic is made easy
+with Spring Boot.  The next two sections takes a close look at setting up our application to 
+report via Kafka Topics, and another via RabbitMQ queues.
 
 === Zipkin via Kafka Topic
 Support for Kafka topics is possible through the use of `zipkin2.reporter.kafka11.KafkaSender`
@@ -278,7 +401,7 @@ sender. We will continue with the same `Tracing` configuration since there is no
     }
 ----
 
-To get OpenZipkin to consume from Kafka, you will need to have a kafka sevice running.
+To get zipkin-erver to consume from Kafka, you will need to have a kafka sevice running.
 For information on standing up a Kafka server, see https://kafka.apache.org/quickstart[the quickstart] section.
 Running the zipkin server is done with the following method:
 
