@@ -401,6 +401,9 @@ Get this service off the ground is done a command:
 Should this succeed, there will be a grpc server listening on default port `6565`.
 
 === Instrumenting gRPC Client
+There is already a pretty succinct document for tracing gRPC services on the 
+http://github.com/openzipkin/grpc-sender[openzipkin grpc sender].
+
 Our grpc client will be used by another project (the web server) to access the gRPC greeting service.
 
 .GrpcClient.java
