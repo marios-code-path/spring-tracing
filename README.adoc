@@ -6,7 +6,7 @@ Mario Gray <mgray@pivotal.io>
 :numbered:
 :website: https://cloud.spring.io/spring-cloud-sleuth/
 
-== Motivation
+== Purpose
 The more distributed a system the harder it is to debug errors, find latency, and to understand the potentially cascading impact of a bug. External monitoring only tells you the overall response time and number of invocations but doesn't give us a way to understand internal invocations. Structured log entries can be correllated, eventually, to paint a picture of the movement of a request through a system, but structured logs are not easy to query. 
 
 
@@ -38,17 +38,22 @@ An upstream HTTP call with https://github.com/openzipkin/b3-propagation[B3Propag
 At this time of writing, B3 propagation is supported for Finagle, HTTP and gRPC. We will utilize both
 methods in this example.
 
-== Starting Zipkin-Server
-To start a 'vanilla' instance of Zipkin, simply execute the following in an empty console.
+== Setup Zipkin Server
+Configuring Zipkin is easy using environment variables.  Here will 
+utilize a few key configuration options.
 
-=== Consume via HTTP
+=== Consume via HTTP only
+There are a few ways to start Zipkin.
+To start a 'vanilla' instance of Zipkin with HTTP ingress only, simply execute the following in an empty console.
+
 .startzipkin.sh
 [source,shell]
 ----
 $ java -jar /path/zipkin-server.jar
 ----
-=== Consume via Kafka
-To get zipkin-server to consume from Kafka, you will need to have a kafka sevice running.
+
+=== Enable Kafka Collector
+To enable Zipkin Kafka Collectors, you will need to have a Kafka sevice running.
 For information on standing up a Kafka server, see https://kafka.apache.org/quickstart[the quickstart] section.
 Running the zipkin server is done with the following method:
 
@@ -58,8 +63,8 @@ $ KAFKA_ZOOKEEPER=127.0.0.1:2181
 $ java -jar /path/kafka-server.jar
 ----
 
-=== Consume via RabbitMQ
-Starting up zipkin server against a rabbitmq server is done with the following:
+=== Enable RabbitMQ Collector
+To start up Zipkin server with RabbitMQ Collectors active:
 
 [source,shell]
 .startZipkinRabbit.sh
@@ -67,120 +72,16 @@ Starting up zipkin server against a rabbitmq server is done with the following:
 $ export RABBIT_URI=amqp://localhost:5672/
 $ java -jar /path/zipkin-server.jar
 ----
-== Configuring a Tracing bean
-Generate  a new Spring application with the dependencies for Web and Lombok. Use this link to generate a http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[new project from the Spring Initializr (http://start.spring.io)]. We'll stand up a REST  API with two  endpoints. One endpoint will call the other. We'll use the Spring Framework `RestTemplate`  to make HTTP calls. In this trivial example, we'll have one service call another on the same node, but the principles applies to as many nodes as we'd like. 
-This first application will only log trace data at the server ingress point. It demonstrates
-the minimal requirements to get started with trace instrumentation.
-
-To start, we need to configure a `brave.Tracing` bean into our application context. This will provide application-specific (this example's) trace functionality within the zipkin trace instrumentation API. It serves as the server-specific configuration bean for our running node.
-
-.TracingConfiguration.java
-[source,java]
-----
-@Configuration
-public class TracingConfiguration {
-    @Bean
-    Tracing tracing(@Value("${spring.application.name:spring-tracing}") String serviceName,
-                    Reporter<Span> spanReporter) {
-        return Tracing
-                .newBuilder()
-                .sampler(Sampler.ALWAYS_SAMPLE)
-                .localServiceName(serviceName)
-                .propagationFactory(ExtraFieldPropagation
-                        .newFactory(B3Propagation.FACTORY, "client-id"))
-                .currentTraceContext(MDCCurrentTraceContext.create())
-                .spanReporter(spanReporter)
-                .build();
-    }
-
-    @Bean
-    HttpTracing httpTracing(Tracing tracing) {
-        return HttpTracing.create(tracing);
-    }
-}
-----
-
-=== MDC setup (logging)
-Because we are using SLF4j - that implements it's own version of Managed Diagnostic Context (MDC). 
-Thus, `brave.context.slf4j.MDCCurrentTraceContext` is a ready-made Trace Context that 
-will expose current trace and span ID's to SLF4j as logging properties with the given
-names: `traceId, spanId, parentId`. If you are using log4j2 instead, then a provided
-class `brave.context.log4j2.ThreadContextCurrentTraceContext` will do the same for
-log4j2's `ThreadContext`.
-
-=== Reporting Trace to Zipkin-Server
-Spans are created in instrumentation, transported out-of-band, and eventually persisted.
-Zipkin uses Reporters `zipkin2.reporter.Reporter` to sends spans (or encoded spans) recorded
-by instrumentation out of process. There are a couple of default Reporters that do not send
-but can help with testing: `Reporter.NOOP` and `Reporter.CONSOLE`.
-
-In this case, we will configure an (ThreadSafe)`AsyncReporter` that will give us protection from
-latency or exceptions when reporting spans out of process. In order to abstract transport
-specifics, the `zipkin2.reporter.Sender` component is used to encode and trasmit spans out of process.
-
-.ReportToZipkinConfiguratin.java
-[source,java]
-----
-@Profile("zipkin")
-@Configuration
-class TracingReportToZipkinConfiguration {
-    @Bean
-    Sender sender(@Value("${mcp.zipkin.url}") String zipkinSenderUrl) {
-        return OkHttpSender.create(zipkinSenderUrl);
-    }
-
-    @Bean
-    AsyncReporter<Span> spanReporter(Sender sender) {
-        return AsyncReporter.create(sender);
-    }
-}
-----
-
-Getting data reported to zipkin indirectly either via message queue or topic is made easy
-with Spring Boot.  The next two sections takes a close look at setting up our application to 
-report via Kafka Topics, and another via RabbitMQ queues.
-
-=== Via Kafka Topic
-Support for Kafka topics is possible through the use of `zipkin2.reporter.kafka11.KafkaSender`
-sender. We will continue with the same `Tracing` configuration since there is no change there. 
-
-[source,java]
-----
-    @Bean
-    Sender sender(@Value("${mcp.kafka.url}") String kafkaUrl) throws IOException {
-        return KafkaSender.create(kafkaUrl);
-    }
-----
-
-=== Via RabbitMQ
-Another common Sender is the `zipkin2.reporter.amqp.RabbitMQSender` sender. This will ship
-JSON encoded spans to a Queue.
-
-Setting up the RabbitMQSender requires a host URL, and the name of the queue which Zipkin-server
-is expected to consume.
-
-[source,java]
-----
-    @Bean
-    Sender sender(@Value("${mcp.rabbit.url}") String rabbitmqHostUrl,
-                  @Value("${mcp.rabbit.queue}") String zipkinQueue) throws IOException {
-        RabbitMQSender sender;
-
-        sender = RabbitMQSender.newBuilder()
-                .queue(zipkinQueue)
-                .addresses(rabbitmqHostUrl).build();
-
-        return sender;
-    }
-----
 
 == Standing up the RESTful Service
-This is the REST controller that will let us make requests to our test application.
+Generate  a new Spring application with the dependencies for Web and Lombok. Use this link to generate a http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[new project from the Spring Initializr (http://start.spring.io)]. We'll stand up a REST  API with two  endpoints. One endpoint will call the other. We'll use the Spring Framework `RestTemplate`  to make HTTP calls. 
+
+In this example, we'll have one service call another on the same node, but the principles applies to as many nodes as we'd like.
+
 
 .RestController.java
 [source,java]
 ----
-@Profile("web")
 @RestController
 public class TracingRestController {
     private final RestTemplateBuilder restTemplatebuilder;
@@ -227,8 +128,111 @@ logging.level.mcp.cloudtrace=info
 spring.application.name=spring-tracing-http
 ----
 
-Start the server and invoke the `/frontend` endpoint.
+== Configure the Tracing Bean
 
+To start tracing, we need to configure a `brave.Tracing` bean into our application context. This will provide application-specific (this example's) trace functionality within the zipkin trace instrumentation API. It serves as the server-specific configuration bean for our running node.
+
+.TracingConfiguration.java
+[source,java]
+----
+@Configuration
+public class TracingConfiguration {
+    @Bean
+    Tracing tracing(@Value("${spring.application.name:spring-tracing}") String serviceName,
+                    Reporter<Span> spanReporter) {
+        return Tracing
+                .newBuilder()
+                .sampler(Sampler.ALWAYS_SAMPLE)
+                .localServiceName(serviceName)
+                .propagationFactory(ExtraFieldPropagation
+                        .newFactory(B3Propagation.FACTORY, "client-id"))
+                .currentTraceContext(MDCCurrentTraceContext.create())
+                .spanReporter(spanReporter)
+                .build();
+    }
+
+    @Bean
+    HttpTracing httpTracing(Tracing tracing) {
+        return HttpTracing.create(tracing);
+    }
+}
+----
+
+Because we are using SLF4j - that implements it's own version of Managed Diagnostic Context (MDC). 
+Thus, `brave.context.slf4j.MDCCurrentTraceContext` is a ready-made Trace Context that 
+will expose current trace and span ID's to SLF4j as logging properties with the given
+names: `traceId, spanId, parentId`. If you are using log4j2 instead, then a provided
+class `brave.context.log4j2.ThreadContextCurrentTraceContext` will do the same for
+log4j2's `ThreadContext`.
+
+== Configure Trace Reporting (sending)
+Spans are created in instrumentation, transported out-of-band, and eventually persisted.
+Zipkin uses Reporters `zipkin2.reporter.Reporter` to sends spans (or encoded spans) recorded
+by instrumentation out of process. There are a couple of default Reporters that do not send
+but can help with testing: `Reporter.NOOP` and `Reporter.CONSOLE`.
+
+=== Via Http
+.ReportToZipkinConfiguration.java
+[source,java]
+----
+@Profile("zipkin")
+@Configuration
+class TracingReportToZipkinConfiguration {
+    @Bean
+    Sender sender(@Value("${mcp.zipkin.url}") String zipkinSenderUrl) {
+        return OkHttpSender.create(zipkinSenderUrl);
+    }
+
+    @Bean
+    AsyncReporter<Span> spanReporter(Sender sender) {
+        return AsyncReporter.create(sender);
+    }
+}
+----
+
+In this case, we have configured an (ThreadSafe)`AsyncReporter` that will give us protection from
+latency or exceptions when reporting spans out of process. In order to abstract transport
+specifics, the `zipkin2.reporter.Sender` component is used to encode and trasmit spans out of process.
+
+Getting data reported to zipkin indirectly either via message queue or topic is made easy
+with Spring Boot.  The next two sections takes a close look at setting up our application to 
+report via Kafka Topics, and another via RabbitMQ queues.
+
+=== Via Kafka Sender
+Support for Kafka topics is possible through the use of `zipkin2.reporter.kafka11.KafkaSender`
+sender. We will continue with the same `Tracing` configuration since there is no change there. 
+
+[source,java]
+----
+    @Bean
+    Sender sender(@Value("${mcp.kafka.url}") String kafkaUrl) throws IOException {
+        return KafkaSender.create(kafkaUrl);
+    }
+----
+
+=== Via RabbitMQ Sender
+Another common Sender is the `zipkin2.reporter.amqp.RabbitMQSender` sender. This will ship
+JSON encoded spans to a Queue.
+
+Setting up the RabbitMQSender requires a host URL, and the name of the queue which Zipkin-server
+is expected to consume.
+
+[source,java]
+----
+    @Bean
+    Sender sender(@Value("${mcp.rabbit.url}") String rabbitmqHostUrl,
+                  @Value("${mcp.rabbit.queue}") String zipkinQueue) throws IOException {
+        RabbitMQSender sender;
+
+        sender = RabbitMQSender.newBuilder()
+                .queue(zipkinQueue)
+                .addresses(rabbitmqHostUrl).build();
+
+        return sender;
+    }
+----
+
+== Observing trace output
 === Observing (non-propagated) Trace Details
 .invoke_with_zipkin_trace
 [source,shell]
