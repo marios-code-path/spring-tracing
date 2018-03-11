@@ -20,13 +20,9 @@ public class TracingReportToRabbitConfiguration {
     @Bean
     Sender sender(@Value("${mcp.rabbit.url}") String rabbitmqHostUrl,
                   @Value("${mcp.rabbit.queue}") String zipkinQueue) throws IOException {
-        RabbitMQSender sender;
-
-        sender = RabbitMQSender.newBuilder()
+        return RabbitMQSender.newBuilder()
                 .queue(zipkinQueue)
                 .addresses(rabbitmqHostUrl).build();
-
-        return sender;
     }
 
     /**

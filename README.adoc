@@ -192,22 +192,33 @@ class TracingReportToZipkinConfiguration {
 
 In this case, we have configured an (ThreadSafe)`AsyncReporter` that will give us protection from
 latency or exceptions when reporting spans out of process. In order to abstract transport
-specifics, the `zipkin2.reporter.Sender` component is used to encode and trasmit spans out of process.
+specifics, the `zipkin2.reporter.Sender` component is used to encode and trasmit spans out of process using HTTP.
 
-Getting data reported to zipkin indirectly either via message queue or topic is made easy
-with Spring Boot.  The next two sections takes a close look at setting up our application to 
+Indirect reporting is possible using Kafka and RabbitMQ among other modules.
+The next two sections takes a close look at setting up our application to 
 report via Kafka Topics, and another via RabbitMQ queues.
 
 === Via Kafka Sender
 Support for Kafka topics is possible through the use of `zipkin2.reporter.kafka11.KafkaSender`
-sender. We will continue with the same `Tracing` configuration since there is no change there. 
+sender. Create a new configuration class and add it to the 'kafka' profile.
 
+.KafkaReportingConfiguration.java
 [source,java]
 ----
+@Profile("kafka")
+@Configuration
+public class TracingReportToKafkaConfiguration {
     @Bean
     Sender sender(@Value("${mcp.kafka.url}") String kafkaUrl) throws IOException {
         return KafkaSender.create(kafkaUrl);
     }
+    @Bean
+    AsyncReporter<Span> spanReporter(Sender sender) {
+
+        return AsyncReporter.create(sender);
+    }
+
+}
 ----
 
 === Via RabbitMQ Sender
@@ -217,19 +228,25 @@ JSON encoded spans to a Queue.
 Setting up the RabbitMQSender requires a host URL, and the name of the queue which Zipkin-server
 is expected to consume.
 
+.RabbitMQReportingConfiguration.java
 [source,java]
 ----
+@Profile("rabbit")
+@Configuration
+public class TracingReportToRabbitConfiguration {
     @Bean
     Sender sender(@Value("${mcp.rabbit.url}") String rabbitmqHostUrl,
                   @Value("${mcp.rabbit.queue}") String zipkinQueue) throws IOException {
-        RabbitMQSender sender;
-
-        sender = RabbitMQSender.newBuilder()
+        return RabbitMQSender.newBuilder()
                 .queue(zipkinQueue)
                 .addresses(rabbitmqHostUrl).build();
-
-        return sender;
     }
+
+    @Bean
+    AsyncReporter<Span> spanReporter(Sender sender) {
+        return AsyncReporter.create(sender);
+    }
+}
 ----
 
 == Observing trace output
@@ -313,11 +330,21 @@ Now, when we call our endpoint, we should see a traceId, spanId, and our `client
 as it would have commuted across the entire request chain.
 
 == gRPC Tracing
-To expose gRPC, I use the https://github.com/LogNet/grpc-spring-boot-starter[LogNet's grpc-spring-boot-starter] module.
-This makes it much easier to manage grpc stub generation, and service configuration. 
-To get our gRPC service started, we'll need a `.proto` definition for the gRPC endpoints and data objects.
+Two new modules will get created `grpc-client` and `grpc-server` which will have the standard 
+spring-boot and zipking dependencies, but most of all include several dependencies related to the gRPC 
+project.
 
-.proto_definition
+The details of dependency management is outside of the scope of this article.  For the actual dependencies,
+check out [trace-grpc-server/pom.xml] and copy all the `lognet` and `grpc` dependencies. 
+
+=== Lognet's GRPC-starter 
+To expose gRPC effortlessly, use https://github.com/LogNet/grpc-spring-boot-starter[LogNet's grpc-spring-boot-starter].
+This module helps by generating gRPC service stubs during build process, in the `generate-sources` goal.  It also has the spring-boot hooks to make configuring a 
+gRPC service seemless.
+
+To begin, we'll configure a  protobuf `.proto` service definition so that we can code the server.
+
+.protobuf_configuration.proto
 [source,grpc]
 ----
 syntax = "proto3";
@@ -342,11 +369,12 @@ service GreetingService {
 }
 ----
 
-The details of standing up and setting up dependencies is outside of the scope of this article.  Further dependency details 
-are found in [trace-grpc-server/pom.xml]. You will want a new project setup with all of the `lognet` and `io.grpc` dependencies and build plugins specified in the pom. 
-Once you have this complete, you can use maven to build and start your gRPC service.
-Below is a listing of our GRPC service. Note that only gRPC source generation will cause 'GreetingServiceGrpc.GreetingServiceImplBase' to exist,
-so you must already execute the `generate-sources` goal in maven to make that happen.
+You can generate stubs by simply invoking
+.stub_maker.sh
+[source,shell]
+----
+$ mvn generate-sources
+----
 
 .GrpcService.java
 [source, java]
@@ -367,6 +395,7 @@ public class GrpcService extends GreetingServiceGrpc.GreetingServiceImplBase {
     }
 }
 ----
+
 Apply the `org.lognet.GRpcService` annotation to mark this bean for service registration.
 
 === Instrumenting gRPC Server
