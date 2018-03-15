@@ -38,6 +38,7 @@ An upstream HTTP call with https://github.com/openzipkin/b3-propagation[B3Propag
 At this time of writing, B3 propagation is supported for Finagle, HTTP and gRPC. We will utilize both
 methods in this example.
 
+Zipkin itself is loosely based on Google Dapper[http://pub.google.com/papers/dapper.pdf].
 == Setup Zipkin Server
 Configuring Zipkin is easy using environment variables.  Here will 
 utilize a few key configuration options.
@@ -116,7 +117,7 @@ public class TracingApplication {
     }
 }
 ----
-Configure the logger and give this node a name. 
+Configure the logger and give this node a name.
 
 .application.properties
 [source,script]
@@ -125,11 +126,11 @@ logging.pattern.level=%d{ABSOLUTE} [%X{traceId}/%X{spanId}] %-5p [%t] %C{2} - %m
 logging.level.root=info
 logging.level.mcp.cloudtrace=info
 
+spring.zipkin.service.name=http-service
 spring.application.name=spring-tracing-http
 ----
 
 == Configure the Tracing Bean
-
 To start tracing, we need to configure a `brave.Tracing` bean into our application context. This will provide application-specific (this example's) trace functionality within the zipkin trace instrumentation API. It serves as the server-specific configuration bean for our running node.
 
 .TracingConfiguration.java
@@ -171,7 +172,7 @@ Zipkin uses Reporters `zipkin2.reporter.Reporter` to sends spans (or encoded spa
 by instrumentation out of process. There are a couple of default Reporters that do not send
 but can help with testing: `Reporter.NOOP` and `Reporter.CONSOLE`.
 
-=== Via Http
+====== Via Http
 .ReportToZipkinConfiguration.java
 [source,java]
 ----
@@ -198,7 +199,7 @@ Indirect reporting is possible using Kafka and RabbitMQ among other modules.
 The next two sections takes a close look at setting up our application to 
 report via Kafka Topics, and another via RabbitMQ queues.
 
-=== Via Kafka Sender
+====== Via Kafka Sender
 Support for Kafka topics is possible through the use of `zipkin2.reporter.kafka11.KafkaSender`
 sender. Create a new configuration class and add it to the 'kafka' profile.
 
@@ -221,7 +222,7 @@ public class TracingReportToKafkaConfiguration {
 }
 ----
 
-=== Via RabbitMQ Sender
+====== Via RabbitMQ Sender
 Another common Sender is the `zipkin2.reporter.amqp.RabbitMQSender` sender. This will ship
 JSON encoded spans to a Queue.
 
@@ -260,6 +261,14 @@ public class TracingReportToRabbitConfiguration {
 $ curl -H "client-id: tracing" http://localhost:8080/frontend
 Greeting
 ----
+
+.single_hop_graphic
+ [ display zipkin graphic of a single hop ]
+
+ This is a single request we made to `/fronetnd` it will simply call a URL in the same server.  
+ However simple this is, the same concept is illustrated - cross service trace propagation.
+ Possible with http://github.com/openzipkin/B3Propagation[B3 Propagation]. Custom tags are allowed, but we will discuss that in a
+ later article.
 
 .server_side_console
 [source,text]
@@ -344,7 +353,7 @@ gRPC service seemless.
 
 To begin, we'll configure a  protobuf `.proto` service definition so that we can code the server.
 
-.protobuf_configuration.proto
+.greeting.proto
 [source,grpc]
 ----
 syntax = "proto3";
@@ -396,7 +405,7 @@ public class GrpcService extends GreetingServiceGrpc.GreetingServiceImplBase {
 }
 ----
 
-Apply the `org.lognet.GRpcService` annotation to mark this bean for service registration.
+Apply the `org.lognet.GRpcService` annotation to mark this bean for service registration at startup.
 
 === Instrumenting gRPC Server
 To intercept service calls and instrument tracing, wire in a `brave.grpc.GrpcTracing` bean 
@@ -406,7 +415,7 @@ mark the interceptor bean as global.  This will expose tracing to all GRPC endpo
 .GrpcServerConfiguration.java
 [source,java]
 ----
-@Configuration
+0@Configuration
 public class TracingGrpcServerConfiguration {
     @Bean
     public GrpcTracing grpcTracing(Tracing tracing) {
@@ -421,7 +430,7 @@ public class TracingGrpcServerConfiguration {
 }
 ----
 
-Get this service off the ground is done a command:
+The command to run this new service:
 
 .grpcstart.sh
 [source,shell]
@@ -438,6 +447,7 @@ There is already a pretty succinct document for tracing gRPC services on the
 http://github.com/openzipkin/grpc-sender[openzipkin grpc sender].
 
 Our grpc client will be used by another project (the web server) to access the gRPC greeting service.
+Thus, we will isolate the client into it's own module.
 
 .GrpcClient.java
 [source,java]
@@ -471,7 +481,6 @@ public class GreetingClient {
 ----
 
 For tracing to work on the client side, we must wire an `io.grpc.ManagedChannel` with an interceptor from our `grpcTracing` bean ( as with the server ).
-It is ideal to place this client in it's own project to insulate dependencies. 
 
 .GrpcClientTraceConfiguration.java
 [source,java]
@@ -488,3 +497,5 @@ It is ideal to place this client in it's own project to insulate dependencies.
                 .usePlaintext(true);
     }
 ----
+
+This completes the configuration for our Grpc tracing client.  

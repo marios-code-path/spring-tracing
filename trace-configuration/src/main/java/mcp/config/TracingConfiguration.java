@@ -17,7 +17,7 @@ import zipkin2.reporter.Sender;
 @Configuration
 public class TracingConfiguration {
     @Bean
-    Tracing tracing(@Value("${spring.application.name:spring-tracing}") String serviceName,
+    Tracing tracing(@Value("${spring.zipkin.service.name?spring.application.name:spring-tracing}") String serviceName,
                     Reporter<Span> spanReporter) {
         return Tracing
                 .newBuilder()
