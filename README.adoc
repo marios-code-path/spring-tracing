@@ -347,7 +347,7 @@ as it would have commuted across the entire request chain.
 
 == gRPC Tracing
 Two new modules will get created `grpc-client` and `grpc-server` which will have the standard 
-spring-boot and zipking dependencies, but most of all include several dependencies related to the gRPC 
+spring-boot and zipkin dependencies, but most of all include several dependencies related to the gRPC 
 project.
 
 The details of dependency management is outside of the scope of this article.  For the actual dependencies,
