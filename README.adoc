@@ -38,14 +38,19 @@ An upstream HTTP call with https://github.com/openzipkin/b3-propagation[B3Propag
 At this time of writing, B3 propagation is supported for Finagle, HTTP and gRPC. We will utilize both
 methods in this example.
 
-Zipkin itself is loosely based on Google Dapper[http://pub.google.com/papers/dapper.pdf].
-== Setup Zipkin Server
-Configuring Zipkin is easy using environment variables.  Here will 
-utilize a few key configuration options.
+Zipkin itself has a design based on the Google Dapper[http://pub.google.com/papers/dapper.pdf] paper.
+As the homepage says, a key advantage was the need to implement a non-invasive library. The minimal 
+JRE requirements are JDK 6 for core modules, additional requirements are up-stream (eg. storage)
+Check out the https://github.com/openzipkin/zipkin[Zipkin git] to gather additional requirements for your project.
 
-=== Consume via HTTP only
+== Setup Zipkin Server
+Configuring Zipkin is easy using environment variables. In this section we will take a look at getting the Zipkin server up and running with ingress from HTTP, Kafka and RabbitMQ.
+
+In order to match the transport coverage given in later application sections, we will briefly explore setting up Zipkin server in it's most basic form for three different ingress configurations.
+
+=== HTTP Collector
 There are a few ways to start Zipkin.
-To start a 'vanilla' instance of Zipkin with HTTP ingress only, simply execute the following in an empty console.
+To start a basic configuration of Zipkin with https://github.com/openzipkin/zipkin/blob/master/zipkin-server/src/main/java/zipkin/server/ZipkinHttpCollector.java[HTTP] ingress, simply execute the following in an empty console.
 
 .startzipkin.sh
 [source,shell]
@@ -53,8 +58,8 @@ To start a 'vanilla' instance of Zipkin with HTTP ingress only, simply execute t
 $ java -jar /path/zipkin-server.jar
 ----
 
-=== Enable Kafka Collector
-To enable Zipkin Kafka Collectors, you will need to have a Kafka sevice running.
+=== Enable Kafka Collector option
+To enable the https://github.com/openzipkin/zipkin/tree/master/zipkin-collector/kafka[Kafka Collector], you will need to have a Kafka sevice running.
 For information on standing up a Kafka server, see https://kafka.apache.org/quickstart[the quickstart] section.
 Running the zipkin server is done with the following method:
 
@@ -65,7 +70,7 @@ $ java -jar /path/kafka-server.jar
 ----
 
 === Enable RabbitMQ Collector
-To start up Zipkin server with RabbitMQ Collectors active:
+To start up Zipkin server with https://github.com/openzipkin/zipkin/tree/master/zipkin-collector/rabbitmq[RabbitMQ] Collectors active:
 
 [source,shell]
 .startZipkinRabbit.sh
@@ -74,11 +79,13 @@ $ export RABBIT_URI=amqp://localhost:5672/
 $ java -jar /path/zipkin-server.jar
 ----
 
-== Standing up the RESTful Service
+== Standing up the traced Application
 Generate  a new Spring application with the dependencies for Web and Lombok. Use this link to generate a http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[new project from the Spring Initializr (http://start.spring.io)]. We'll stand up a REST  API with two  endpoints. One endpoint will call the other. We'll use the Spring Framework `RestTemplate`  to make HTTP calls. 
 
-In this example, we'll have one service call another on the same node, but the principles applies to as many nodes as we'd like.
+In this example, we will declare multiple back-ends (kafka, rabbit) as the ingress for our trace reporting. We will then take on an application which does expose multiple services with HTTP and gRPC.  
 
+The application setup will be such that our tracing priroirites is submodule'd along with client and service.  Thus, there
+will be 4 modules: configuration, grpc-client, grpc-service, http-server. 
 
 .RestController.java
 [source,java]
