@@ -1,9 +1,10 @@
-= Spring Tracing with OpenZipkin Brave, Kafka, and Spring Boot
+= Spring Tracing - A multi-RPC trace story with Zipkin and Spring
 Mario Gray <mgray@pivotal.io>
 :Author Initials: MVG
 :toc:
 :icons:
 :numbered:
+:images: ./graphics
 :website: https://cloud.spring.io/spring-cloud-sleuth/
 
 == Purpose
@@ -386,6 +387,7 @@ service GreetingService {
 ----
 
 You can generate stubs by simply invoking
+
 .stub_maker.sh
 [source,shell]
 ----
@@ -505,4 +507,15 @@ For tracing to work on the client side, we must wire an `io.grpc.ManagedChannel`
     }
 ----
 
-This completes the configuration for our Grpc tracing client.  
+This completes the configuration for our Grpc tracing client.
+
+Now when we test `/frontend` and as a result of instrumenting all the endpoints.  
+You'll see a span graph:
+
+
+
+
+.A Span Graph
+[#img-span-graph]
+[caption="Figure 1: "]
+image::zipkin-trace-span-graph.png[grpc-spans]
