@@ -4,7 +4,7 @@ Mario Gray <mgray@pivotal.io>
 :toc:
 :icons:
 :numbered:
-:images: ./graphics
+:imagesdir: ./graphics
 :website: https://cloud.spring.io/spring-cloud-sleuth/
 
 == Purpose
