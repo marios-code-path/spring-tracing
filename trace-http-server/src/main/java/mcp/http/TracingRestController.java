@@ -9,6 +9,7 @@ import org.springframework.web.client.RestTemplate;
 @RestController
 public class TracingRestController {
     private final RestTemplate restTemplate;
+    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TracingGrpcRestController.class);
 
     public TracingRestController(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
