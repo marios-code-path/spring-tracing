@@ -25,7 +25,7 @@ public class TracingGrpcConfiguration {
 
     @Bean
     public ManagedChannelBuilder managedChannelBuilder(GrpcTracing grpcTracing) {
-        return ManagedChannelBuilder.forAddress("localhost", 6565)
+        return ManagedChannelBuilder.forAddress("localhost", 6565 )
                 .intercept(grpcTracing.newClientInterceptor())
                 .usePlaintext(true);
     }

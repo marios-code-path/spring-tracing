@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Profile;
 import zipkin2.Span;
 import zipkin2.reporter.Reporter;
 
-@Profile("console")
 @Configuration
 public class TracingConsoleConfiguration {
     @Bean

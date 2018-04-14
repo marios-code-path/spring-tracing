@@ -74,7 +74,7 @@
         <dependency>
             <groupId>org.lognet</groupId>
             <artifactId>grpc-spring-boot-starter</artifactId>
-            <version>RELEASE</version>
+            <version>${lognet.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.grpc</groupId>

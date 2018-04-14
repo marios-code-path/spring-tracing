@@ -10,7 +10,7 @@ import zipkin2.reporter.Reporter;
 import zipkin2.reporter.Sender;
 import zipkin2.reporter.okhttp3.OkHttpSender;
 
-@Profile("zipkin")
+@Profile("report-to-zipkin")
 @Configuration
 class TracingReportToZipkinConfiguration {
 
@@ -21,7 +21,6 @@ class TracingReportToZipkinConfiguration {
     Sender sender(@Value("${mcp.zipkin.url}") String zipkinSenderUrl) {
         return OkHttpSender.create(zipkinSenderUrl);
     }
-
 
     /**
      * Configuration for how to buffer spans into messages for Zipkin

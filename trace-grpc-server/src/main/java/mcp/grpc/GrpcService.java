@@ -7,7 +7,7 @@ import mcp.Greeting;
 import mcp.GreetingServiceGrpc;
 import org.lognet.springboot.grpc.GRpcService;
 
-@GRpcService
+@GRpcService(applyGlobalInterceptors = true)
 public class GrpcService extends GreetingServiceGrpc.GreetingServiceImplBase {
     private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GrpcService.class);
 
@@ -17,7 +17,7 @@ public class GrpcService extends GreetingServiceGrpc.GreetingServiceImplBase {
         responseObserver.onNext(
                 Greeting
                         .newBuilder()
-                        .setHello("hello " + request.getName())
+                        .setHello("Hello " + request.getName())
                         .build());
         responseObserver.onCompleted();
     }

@@ -12,8 +12,11 @@ import org.springframework.context.annotation.Configuration;
 import zipkin2.Span;
 import zipkin2.reporter.Reporter;
 
+import java.nio.file.attribute.AclEntryFlag;
+
 @Configuration
 public class TracingConfiguration {
+
     @Bean
     Tracing tracing(@Value("${spring.zipkin.service.name?spring.application.name:spring-tracing}") String serviceName,
                     Reporter<Span> spanReporter) {

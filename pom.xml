@@ -25,14 +25,15 @@
         <log4j.version>2.10.0</log4j.version>
         <zipkin-reporter2.version>2.4.1</zipkin-reporter2.version>
         <spring-cloud.version>Finchley.M7</spring-cloud.version>
-        <grpc.version>1.11.0</grpc.version>
+        <grpc.version>1.10.0</grpc.version>
+        <lognet.version>2.1.4</lognet.version>
     </properties>
 
     <modules>
-	    <module>trace-configuration</module>
+        <module>trace-configuration</module>
         <module>trace-grpc-client</module>
         <module>trace-grpc-server</module>
-	    <module>trace-http-server</module>
+        <module>trace-http-server</module>
     </modules>
 
 

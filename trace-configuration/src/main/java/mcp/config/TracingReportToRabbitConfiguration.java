@@ -12,7 +12,7 @@ import zipkin2.reporter.amqp.RabbitMQSender;
 
 import java.io.IOException;
 
-@Profile("rabbit")
+@Profile("report-to-rabbit")
 @Configuration
 public class TracingReportToRabbitConfiguration {
     /**

@@ -12,7 +12,7 @@ import zipkin2.reporter.kafka11.KafkaSender;
 
 import java.io.IOException;
 
-@Profile("kafka")
+@Profile("report-to-kafka")
 @Configuration
 public class TracingReportToKafkaConfiguration {
     /**
