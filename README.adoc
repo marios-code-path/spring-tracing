@@ -86,7 +86,7 @@ Generate  a new Spring application with the dependencies for Web and Lombok. Use
 In this example, we will declare multiple back-ends (kafka, rabbit) as the ingress for our trace reporting. We will then take on an application which does expose multiple services with HTTP and gRPC.  
 
 The application setup will be such that our tracing priroirites is submodule'd along with client and service.  Thus, there
-will be 4 modules: configuration, grpc-client, grpc-service, http-server. 
+will be four modules: [configuration, grpc-client, grpc-service, http-server]. 
 
 .RestController.java
 [source,java]
@@ -270,7 +270,10 @@ $ curl -H "client-id: tracing" http://localhost:8080/frontend
 Greeting
 ----
 
-.single_hop_graphic
+.Single hop span graph
+[#img-single-hop-span-graph]
+[caption="Figure 1:"]
+image::zipkin-trace-single-span-graph.png[grpc-spans]
  [ display zipkin graphic of a single hop ]
 
  This is a single request we made to `/fronetnd` it will simply call a URL in the same server.  
@@ -314,7 +317,7 @@ public class WebMVCTracingConfiguration extends WebMvcConfigurerAdapter {
 ----
 
 This interceptor receives an `HttpTracing` bean which gives our `Tracing` bean
-the functionality to apply HTTP specifics to client/server tracing instrumentation.
+the functionality to apply HTTP specific tracing instrumentation to the client/server.
 
 === Instrumenting RestTemplate
 In order to apply Trace Context propagation to our `restTemplate` we must provide -like the server 
@@ -456,7 +459,7 @@ There is already a pretty succinct document for tracing gRPC services on the
 http://github.com/openzipkin/grpc-sender[openzipkin grpc sender].
 
 Our grpc client will be used by another project (the web server) to access the gRPC greeting service.
-Thus, we will isolate the client into it's own module.
+This client of course will have it's own module to keep the tutorial cogent.
 
 .GrpcClient.java
 [source,java]

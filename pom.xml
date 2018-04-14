@@ -25,7 +25,7 @@
         <log4j.version>2.10.0</log4j.version>
         <zipkin-reporter2.version>2.4.1</zipkin-reporter2.version>
         <spring-cloud.version>Finchley.M7</spring-cloud.version>
-        <grpc.version>1.10.0</grpc.version>
+        <grpc.version>1.11.0</grpc.version>
     </properties>
 
     <modules>

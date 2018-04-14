@@ -10,9 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import zipkin2.Span;
-import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.Reporter;
-import zipkin2.reporter.Sender;
 
 @Configuration
 public class TracingConfiguration {

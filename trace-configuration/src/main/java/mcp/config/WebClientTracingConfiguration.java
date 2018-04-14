@@ -1,6 +1,7 @@
 package mcp.config;
 
 import brave.http.HttpTracing;
+import brave.spring.web.TracingAsyncClientHttpRequestInterceptor;
 import brave.spring.web.TracingClientHttpRequestInterceptor;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +11,7 @@ import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 @Configuration
 class WebClientTracingConfiguration {
@@ -22,8 +24,12 @@ class WebClientTracingConfiguration {
 
     @Bean
     AsyncRestTemplate asyncRestTemplate(HttpTracing tracing) {
-        return new AsyncRestTemplate().setInterceptors(
-                new ArrayList<org.springframework.http.client.AsyncClientHttpRequestInterceptor>(TracingClientHttpRequestInterceptor.create(tracing))
-        );
+        AsyncRestTemplate async = new AsyncRestTemplate();
+
+        async.setInterceptors(Arrays.asList(
+                TracingAsyncClientHttpRequestInterceptor.create(tracing)
+        ));
+
+        return async;
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import zipkin2.Span;
 import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.Reporter;
 import zipkin2.reporter.Sender;
 import zipkin2.reporter.kafka11.KafkaSender;
 
@@ -26,7 +27,7 @@ public class TracingReportToKafkaConfiguration {
      * Configuration for how to buffer spans into messages for Zipkin
      */
     @Bean
-    AsyncReporter<Span> spanReporter(Sender sender) {
+    Reporter<Span> spanReporter(Sender sender) {
 
         return AsyncReporter.create(sender);
     }

@@ -11,13 +11,13 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = TracingApplication.class, webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+//@RunWith(SpringRunner.class)
+//@SpringBootTest(classes = TracingApplication.class, webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class CloudTraceApplicationTest {
 
 	private RestTemplate restTemplate = new RestTemplate();
 
-	@Test
+
 	public void frontendShouldInvokeBackend() throws Exception {
 		String clientId = "android";
 		RequestEntity<Void> requestEntity = RequestEntity.get(URI.create("http://localhost:8080/frontend"))
