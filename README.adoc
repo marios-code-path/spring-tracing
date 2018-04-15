@@ -86,7 +86,7 @@ Generate  a new Spring application with the dependencies for Web and Lombok. Use
 In this example, we will declare multiple back-ends (kafka, rabbit) as the ingress for our trace reporting. We will then take on an application which does expose multiple services with HTTP and gRPC.  
 
 The application setup will be such that our tracing priroirites is submodule'd along with client and service.  Thus, there
-will be four modules: [configuration, grpc-client, grpc-service, http-server]. 
+will be four modules: [trace-configuration, trace-grpc-client, trace-grpc-service, trace-http-server]. 
 
 .RestController.java
 [source,java]
@@ -112,8 +112,8 @@ public class TracingRestController {
 }
 ----
 
-The application bootstrap with `@SpringBootApplication` annotation which will make 
-execution super simple.
+The application bootstrap with `@SpringBootApplication` annotation makes launching
+the servers super simple.
 
 .TracingApplication.java
 [source,java]
@@ -273,14 +273,14 @@ Greeting
 .Single hop span graph
 [#img-single-hop-span-graph]
 [caption="Figure 1:"]
-image::zipkin-trace-single-span-graph.png[grpc-spans]
- [ display zipkin graphic of a single hop ]
+image::zipkin-single-frontend.png[http-frontend-span]
+image::zipkin-single-backend.png[http-backend-span]
+This is a single request we made to `/fronetnd` it will simply call `/backend` in the same server.  
+However simple this is, the same concept is illustrated - without instrumentation across all components
+in a trace, then each hop will get a completely new span.
 
- This is a single request we made to `/fronetnd` it will simply call a URL in the same server.  
- However simple this is, the same concept is illustrated - cross service trace propagation.
- Possible with http://github.com/openzipkin/B3Propagation[B3 Propagation]. Custom tags are allowed, but we will discuss that in a
- later article.
-
+To further drive the point home, lets look at the logging aspect when we 
+run zipkin in console mode (use with `report-to-console` profile):
 .server_side_console
 [source,text]
 ----
