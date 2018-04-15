@@ -3,6 +3,7 @@ package mcp.config;
 import brave.http.HttpTracing;
 import brave.spring.web.TracingAsyncClientHttpRequestInterceptor;
 import brave.spring.web.TracingClientHttpRequestInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+@Profile("WEB")
 @Configuration
 class WebClientTracingConfiguration {
     @Bean
