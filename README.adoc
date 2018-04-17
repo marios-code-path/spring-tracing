@@ -258,10 +258,10 @@ public class TracingReportToRabbitConfiguration {
 }
 ----
 
-== Instrumenting Web Components
+== Instrumenting the Web stack
 This section will specificly discuss how to enable tracing on your WebMVC and RestTemplate components.
 
-=== WebMVC (REST)
+=== WebMVC
 To instrument SpringMVC endpoints, we will need to configure an instance of the `brave.spring.webmvc.TracingHandlerInterceptor` class. To configure the interceptor, we will need to register a `org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter` that gives us hooks into SpringMVC's `InterceptorRegistry` (or alternately use `WebMvcConfigurer` when using Spring 5.0 or more).
 
 .WebMvcConfiguration
@@ -285,7 +285,7 @@ public class WebMVCTracingConfiguration extends WebMvcConfigurerAdapter {
 This interceptor receives an `HttpTracing` bean which gives our `Tracing` bean
 the functionality to apply HTTP specific tracing instrumentation to the client/server.
 
-=== Instrumenting RestTemplate
+=== RestTemplate
 In order to apply Trace Context propagation to our `restTemplate` we must provide -like the server 
 setup- an `org.springframework.http.client.ClientHttpRequestInterceptor` to do the 
 client-side tracing work. We'll use the `RestTemplateBuilder` component to construct an zipkin instrumented RestTemplate bean.
@@ -315,7 +315,7 @@ class WebClientTracingConfiguration {
 Now, when we call our endpoint, we should see a traceId, spanId, and our `client-id`
 as it would have commuted across the entire request chain.
 
-== gRPC Tracing
+== Instrumenting the gRPC stack
 Two new modules will get created `grpc-client` and `grpc-server` which will have the standard 
 spring-boot and zipkin dependencies, but most of all include several dependencies related to the gRPC 
 project.
