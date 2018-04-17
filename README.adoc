@@ -258,9 +258,9 @@ public class TracingReportToRabbitConfiguration {
 }
 ----
 
-=== Instrumenting WebMVC
+== Instrumenting Web Components
 To instrument SpringMVC endpoints, we will need to configure an instance of the `brave.spring.webmvc.TracingHandlerInterceptor` class. To configure the interceptor, we will need to register a `org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter` that gives us hooks into SpringMVC's `InterceptorRegistry` (or alternately use `WebMvcConfigurer` when using Spring 5.0 or more).
-
+=== WebMVC (REST)
 .WebMvcConfiguration
 [source,java]
 ----
@@ -282,7 +282,7 @@ public class WebMVCTracingConfiguration extends WebMvcConfigurerAdapter {
 This interceptor receives an `HttpTracing` bean which gives our `Tracing` bean
 the functionality to apply HTTP specific tracing instrumentation to the client/server.
 
-== Instrumenting RestTemplate
+=== Instrumenting RestTemplate
 In order to apply Trace Context propagation to our `restTemplate` we must provide -like the server 
 setup- an `org.springframework.http.client.ClientHttpRequestInterceptor` to do the 
 client-side tracing work. We'll use the `RestTemplateBuilder` component to construct an zipkin instrumented RestTemplate bean.
@@ -301,7 +301,7 @@ class WebClientTracingConfiguration {
 }
 ----
 
-=== Observing (propagated) trace detials
+==== Observing (propagated) trace detials
 .trace_propagated_output
 [source,text]
 ----
