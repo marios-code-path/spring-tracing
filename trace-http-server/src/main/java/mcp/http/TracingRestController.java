@@ -12,11 +12,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 @Profile("http-web")
-@Slf4j
 @RestController
 public class TracingRestController {
     private final RestTemplate restTemplate;
-    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TracingGrpcRestController.class);
+    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TracingRestController.class);
 
     public TracingRestController(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
