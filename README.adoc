@@ -259,8 +259,11 @@ public class TracingReportToRabbitConfiguration {
 ----
 
 == Instrumenting Web Components
-To instrument SpringMVC endpoints, we will need to configure an instance of the `brave.spring.webmvc.TracingHandlerInterceptor` class. To configure the interceptor, we will need to register a `org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter` that gives us hooks into SpringMVC's `InterceptorRegistry` (or alternately use `WebMvcConfigurer` when using Spring 5.0 or more).
+This section will specificly discuss how to enable tracing on your WebMVC and RestTemplate components.
+
 === WebMVC (REST)
+To instrument SpringMVC endpoints, we will need to configure an instance of the `brave.spring.webmvc.TracingHandlerInterceptor` class. To configure the interceptor, we will need to register a `org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter` that gives us hooks into SpringMVC's `InterceptorRegistry` (or alternately use `WebMvcConfigurer` when using Spring 5.0 or more).
+
 .WebMvcConfiguration
 [source,java]
 ----
