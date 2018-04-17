@@ -15,7 +15,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-@Profile("WEB")
 @Configuration
 class WebClientTracingConfiguration {
     @Bean

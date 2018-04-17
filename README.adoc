@@ -258,43 +258,6 @@ public class TracingReportToRabbitConfiguration {
 }
 ----
 
-== Observing trace output
-=== Observing (non-propagated) Trace Details
-.invoke_with_zipkin_trace
-[source,shell]
-----
-~/spring-tracing/trace-http-server$ mvn spring-boot:run -Dspring.active.profiles=zipkin
-  ..... logging ....
-# In another Terminal:
-$ curl -H "client-id: tracing" http://localhost:8080/frontend
-Greeting
-----
-
-.Single hop span graph
-[#img-single-hop-span-graph]
-[caption="Figure 1:"]
-image::zipkin-single-frontend.png[http-frontend-span]
-image::zipkin-single-backend.png[http-backend-span]
-This is a single request we made to `/fronetnd` it will simply call `/backend` in the same server.  
-However simple this is, the same concept is illustrated - without instrumentation across all components
-in a trace, then each hop will get a completely new span.
-
-To further drive the point home, lets look at the logging aspect when we 
-run zipkin in console mode (use with `report-to-console` profile):
-.server_side_console
-[source,text]
-----
-...
-2018-03-06 17:51:19.409 2018-03-06 17:51:19,409 [796133ca413bf4f9/796133ca413bf4f9]  INFO  [http-nio-8080-exec-5] m.h.TracingRestController - header client-id =
- 12686 --- [nio-8080-exec-5] mcp.http.TracingRestController           : header client-id =
-{"traceId":"796133ca413bf4f9","id":"796133ca413bf4f9","kind":"SERVER","name":"get /backend","timestamp":1520387479409105,"duration":1680,"localEndpoint":{"serviceName":"unknown","ipv4":"172.20.10.4"},"remoteEndpoint":{"ipv4":"127.0.0.1","port":60300},"tags":{"http.method":"GET","http.path":"/backend"}}
-{"traceId":"4d8b30b495cbf3e5","id":"4d8b30b495cbf3e5","kind":"SERVER","name":"get /frontend","timestamp":1520387479392157,"duration":20559,"localEndpoint":{"serviceName":"unknown","ipv4":"172.20.10.4"},"remoteEndpoint":{"ipv6":"::1","port":60299},"tags":{"http.method":"GET","http.path":"/frontend"}}
-...
-----
-
-Notice that `%TraceId/%SpanId` are the same? Thats because each commponent in the trace
-path is not receiving a trace context from the previous hop. Lets fix that by registering an implementation of `org.springframework.web.servlet.HandlerInterceptor` that exhibits Zipkin trace instrumentation to SpringMVC.
-
 === Instrumenting WebMVC
 To instrument SpringMVC endpoints, we will need to configure an instance of the `brave.spring.webmvc.TracingHandlerInterceptor` class. To configure the interceptor, we will need to register a `org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter` that gives us hooks into SpringMVC's `InterceptorRegistry` (or alternately use `WebMvcConfigurer` when using Spring 5.0 or more).
 

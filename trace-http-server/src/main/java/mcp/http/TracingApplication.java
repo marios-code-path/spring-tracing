@@ -5,15 +5,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
+import zipkin2.Span;
+import zipkin2.reporter.Reporter;
 
 
 @SpringBootApplication(scanBasePackages = {"mcp"})
 public class TracingApplication {
-    @Bean
-    RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-
     @Bean
     public CommonsRequestLoggingFilter requestLoggingFilter() {
         CommonsRequestLoggingFilter loggingFilter = new CommonsRequestLoggingFilter();
