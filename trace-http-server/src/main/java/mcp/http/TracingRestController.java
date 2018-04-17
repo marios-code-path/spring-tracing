@@ -31,7 +31,7 @@ public class TracingRestController {
     @GetMapping("/delay")
     public void addDelay() throws Exception{
         long delay = ThreadLocalRandom.current().nextInt(1, 5);
-        log.info("Goind to Delay for: " + delay + "seconds");
+        log.info("delay for: " + delay + "seconds");
         TimeUnit.SECONDS.sleep(delay);
         return;
     }

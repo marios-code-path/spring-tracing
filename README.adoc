@@ -328,9 +328,19 @@ Greetings tracing%
 $
 ----
 
-So, we know that our header data is propagating because our client-id header was forwarded to the downstream service
-and exposed as a standard header. Lets take a look at the span graph.  You'll need to access
-Zipkin webUI via `http://localhost:9411/zipkin/`
+So, we know that our header data is propagating because our client-id header was propagated to the downstream service
+and is accessible. Lets take a look at the span graph.  You'll need to access
+Zipkin webUI via `http://localhost:9411/zipkin/`:
+
+.Multi hop span graph
+[#img-multiple-hop-span-graph]
+[caption="HTTP Spans"]
+image::http-trace-graph-x3.png[http-frontend-span]
+
+This is a single request we made to `/fronetnd` it will simply call `/backend` which in turn calls '/delay' in the same server.  
+However simple this is, the same concept is illustrated - instrumentation across all components
+in a trace will give us variety of detials (e.g. timing) that our service call takes in it's trajectory back to the origin.
+
 == Instrumenting the gRPC stack
 Two new modules will get created `grpc-client` and `grpc-server` which will have the standard 
 spring-boot and zipkin dependencies, but most of all include several dependencies related to the gRPC 
