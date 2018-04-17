@@ -2,6 +2,7 @@ package mcp.http;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
@@ -16,8 +17,8 @@ public class TracingRestController {
     }
 
     @GetMapping("/backend")
-    public String backend() {
-        return "Greetings";
+    public String backend(@RequestHeader("client-id") String clientId) {
+        return "Greetings " + clientId;
     }
 
     @GetMapping("/frontend")

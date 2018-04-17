@@ -282,7 +282,7 @@ public class WebMVCTracingConfiguration extends WebMvcConfigurerAdapter {
 This interceptor receives an `HttpTracing` bean which gives our `Tracing` bean
 the functionality to apply HTTP specific tracing instrumentation to the client/server.
 
-=== Instrumenting RestTemplate
+== Instrumenting RestTemplate
 In order to apply Trace Context propagation to our `restTemplate` we must provide -like the server 
 setup- an `org.springframework.http.client.ClientHttpRequestInterceptor` to do the 
 client-side tracing work. We'll use the `RestTemplateBuilder` component to construct an zipkin instrumented RestTemplate bean.
