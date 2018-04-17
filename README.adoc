@@ -306,9 +306,9 @@ class WebClientTracingConfiguration {
 
 ==== Observing (propagated) trace detials
 Lets observe some tracing ativity. With the current setup, we whould get a failry
-modest span graph (just the 2 hops) once we access your RESTful endpoint.
+modest span graph (just the 3 hops) upon accessing the endpoint.
 
-Start the server with `http-web`` and `report-to-zipkin` profiles active so that we can access and then 
+Start the server with `http-web` and `report-to-zipkin` profiles active so that we can access and then 
 visit the service span graph in the Zipkin console.
 
 .start_the_server
@@ -331,13 +331,11 @@ So, we know that our header data is propagating because our client-id header was
 and is accessible. Lets take a look at the span graph.  You'll need to access
 Zipkin webUI via `http://localhost:9411/zipkin/`:
 
-.HTTP trace spans
-
 [#img-multiple-hop-span-graph]
 [caption="HTTP Spans"]
 image::http-trace-graph-x3.png[http-frontend-span]
 
-This is a single request we made to `/fronetnd` it will simply call `/backend` which in turn calls `/delay` in the same server.  
+This is a single request we made to `/frontend` it will simply call `/backend` which in turn calls `/delay` in the same server.  
 However simple this is, the same concept is illustrated - instrumentation across all components
 in a trace will give us variety of detials (e.g. timing) that our service call takes in it's trajectory back to the origin.
 
@@ -395,7 +393,11 @@ $ mvn generate-sources
 @GRpcService
 public class GrpcService extends GreetingServiceGrpc.GreetingServiceImplBase {
     private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GrpcService.class);
+    private final RestTemplate restTemplate;
 
+    public GrpcService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
     @Override
     public void greeting(Greet request, StreamObserver<Greeting> responseObserver) {
         log.info("Greetings, " + request.getName());
@@ -404,6 +406,7 @@ public class GrpcService extends GreetingServiceGrpc.GreetingServiceImplBase {
                         .newBuilder()
                         .setHello("hello " + request.getName())
                         .build());
+        restTemplate.getForObject("http://localhost:8080/delay", String.class);                        
         responseObserver.onCompleted();
     }
 }
@@ -439,7 +442,7 @@ The command to run this new service:
 .grpcstart.sh
 [source,shell]
 ----
-~/code/trace-grpc-service $ mvn spring-boot:run -Dspring.profiles.active=grpc
+~/code/trace-grpc-service $ mvn spring-boot:run -Dspring.profiles.active=grpc-web,report-to-zipkin
 ... logging ...
 ....
 ----
@@ -507,10 +510,8 @@ This completes the configuration for our Grpc tracing client.
 Now when we test `/frontend` and as a result of instrumenting all the endpoints.  
 You'll see a span graph:
 
-
-
-
-.A Span Graph
 [#img-span-graph]
-[caption="Figure 1: "]
-image::zipkin-trace-span-graph.png[grpc-spans]
+image::grpc-web-spans.png.png[grpc-spans]
+The final span graph shows us the route detail to our updated HTTP Rest 
+service.  Now, we can apply this capability to any of our microservices
+should we require tracability across services.

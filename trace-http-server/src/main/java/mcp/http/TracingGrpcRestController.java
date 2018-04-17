@@ -8,6 +8,8 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 @Profile("grpc-web")
 @RestController
@@ -21,6 +23,14 @@ public class TracingGrpcRestController {
                                      RestTemplate restTemplate) {
         this.greetingClient = greetingClient;
         this.restTemplate = restTemplate;
+    }
+
+    @GetMapping("/delay")
+    public void addDelay() throws Exception{
+        long delay = ThreadLocalRandom.current().nextInt(1, 5);
+        log.info("delay for: " + delay + "seconds");
+        TimeUnit.SECONDS.sleep(delay);
+        return;
     }
 
     @GetMapping("/backend")
