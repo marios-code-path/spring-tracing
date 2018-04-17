@@ -305,16 +305,32 @@ class WebClientTracingConfiguration {
 ----
 
 ==== Observing (propagated) trace detials
-.trace_propagated_output
+Lets observe some tracing ativity. With the current setup, we whould get a failry
+modest span graph (just the 2 hops) once we access your RESTful endpoint.
+
+Start the server with `http-web`` and `report-to-zipkin` profiles active so that we can access and then 
+visit the service span graph in the Zipkin console.
+
+.start_the_server
 [source,text]
 ----
-2018-03-02 01:13:25.017 2018-03-02 01:13:25,017 [c0d24dc6b7793eb7/738d09ca4e3dd91e]  INFO  [http-nio-8080-exec-2] m.c.ClientRestController - clientId=mario-id
- 49687 --- [nio-8080-exec-2] mcp.cloudtrace.ClientRestController      : clientId=mario-id
+$ mvn spring-boot:run -Dspring.profiles.active=http-web,report-to-console
 ----
 
 Now, when we call our endpoint, we should see a traceId, spanId, and our `client-id`
 as it would have commuted across the entire request chain.
 
+.access_the_endpoint
+[source,text]
+----
+$ curl -H "client-id: tracing" http://localhost:8080/frontend
+Greetings tracing%
+$
+----
+
+So, we know that our header data is propagating because our client-id header was forwarded to the downstream service
+and exposed as a standard header. Lets take a look at the span graph.  You'll need to access
+Zipkin webUI via `http://localhost:9411/zipkin/`
 == Instrumenting the gRPC stack
 Two new modules will get created `grpc-client` and `grpc-server` which will have the standard 
 spring-boot and zipkin dependencies, but most of all include several dependencies related to the gRPC 
