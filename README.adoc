@@ -185,7 +185,7 @@ Zipkin uses Reporters `zipkin2.reporter.Reporter` to sends spans (or encoded spa
 by instrumentation out of process. There are a couple of default Reporters that do not send
 but can help with testing: `Reporter.NOOP` and `Reporter.CONSOLE`.
 
-=== Via Http
+=== Via HTTP
 .ReportToZipkinConfiguration.java
 [source,java]
 ----
