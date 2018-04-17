@@ -519,4 +519,5 @@ You'll see a span graph:
 image::grpc-web-spans.png[grpc-spans]
 The final span graph shows us the route detail to our updated HTTP Rest 
 service.  Now, we can apply this capability to any of our microservices
-should we require tracability across services.
+should we require tracability across services. *NEXT* implement with Spring-Integration!
+
