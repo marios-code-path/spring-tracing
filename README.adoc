@@ -511,7 +511,7 @@ Now when we test `/frontend` and as a result of instrumenting all the endpoints.
 You'll see a span graph:
 
 [#img-span-graph]
-image::grpc-web-spans.png.png[grpc-spans]
+image::grpc-web-spans.png[grpc-spans]
 The final span graph shows us the route detail to our updated HTTP Rest 
 service.  Now, we can apply this capability to any of our microservices
 should we require tracability across services.
