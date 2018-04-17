@@ -180,7 +180,7 @@ Zipkin uses Reporters `zipkin2.reporter.Reporter` to sends spans (or encoded spa
 by instrumentation out of process. There are a couple of default Reporters that do not send
 but can help with testing: `Reporter.NOOP` and `Reporter.CONSOLE`.
 
-====== Via Http
+=== Via Http
 .ReportToZipkinConfiguration.java
 [source,java]
 ----
@@ -207,7 +207,7 @@ Indirect reporting is possible using Kafka and RabbitMQ among other modules.
 The next two sections takes a close look at setting up our application to 
 report via Kafka Topics, and another via RabbitMQ queues.
 
-====== Via Kafka Sender
+=== Via Kafka Sender
 Support for Kafka topics is possible through the use of `zipkin2.reporter.kafka11.KafkaSender`
 sender. Create a new configuration class and add it to the 'kafka' profile.
 
@@ -230,7 +230,7 @@ public class TracingReportToKafkaConfiguration {
 }
 ----
 
-====== Via RabbitMQ Sender
+=== Via RabbitMQ Sender
 Another common Sender is the `zipkin2.reporter.amqp.RabbitMQSender` sender. This will ship
 JSON encoded spans to a Queue.
 
