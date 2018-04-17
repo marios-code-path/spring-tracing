@@ -39,6 +39,11 @@ An upstream HTTP call with https://github.com/openzipkin/b3-propagation[B3Propag
 At this time of writing, B3 propagation is supported for Finagle, HTTP and gRPC. We will utilize both
 methods in this example.
 
+For further visualization of what a span and trace look like in a system wired with Zipkin.
+
+[#img-zipkin-tracing]
+image::spring-cloud-tracing-graphic.png[zipkin-tracing]
+
 Zipkin itself has a design based on the Google Dapper[http://pub.google.com/papers/dapper.pdf] paper.
 As the homepage says, a key advantage was the need to implement a non-invasive library. The minimal 
 JRE requirements are JDK 6 for core modules, additional requirements are up-stream (eg. storage)
