@@ -527,7 +527,6 @@ in your service paths, then check out any of the links in the next section.
 Should we/ require tracability across services that are not bound to JVM, its good to know that 
 a multi-platform solution exists.
 
-*NEXT* implement with Spring-Integration!
 === Reading List
 
 * https://zipkin.io/pages/instrumenting.html
