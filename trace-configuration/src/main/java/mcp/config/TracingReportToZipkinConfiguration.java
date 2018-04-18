@@ -14,17 +14,11 @@ import zipkin2.reporter.okhttp3.OkHttpSender;
 @Configuration
 class TracingReportToZipkinConfiguration {
 
-    /**
-     * Configuration for how to send spans to directly to Zipkin
-     */
     @Bean
     Sender sender(@Value("${mcp.zipkin.url}") String zipkinSenderUrl) {
         return OkHttpSender.create(zipkinSenderUrl);
     }
 
-    /**
-     * Configuration for how to buffer spans into messages for Zipkin
-     */
     @Bean
     Reporter<Span> spanReporter(Sender sender) {
         return AsyncReporter.create(sender);

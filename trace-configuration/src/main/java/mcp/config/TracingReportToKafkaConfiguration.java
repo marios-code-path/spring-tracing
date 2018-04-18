@@ -15,17 +15,12 @@ import java.io.IOException;
 @Profile("report-to-kafka")
 @Configuration
 public class TracingReportToKafkaConfiguration {
-    /**
-     * Configuration for sending spans to Kafka
-     */
+
     @Bean
     Sender sender(@Value("${mcp.kafka.url}") String kafkaUrl) throws IOException {
         return KafkaSender.create(kafkaUrl);
     }
 
-    /**
-     * Configuration for how to buffer spans into messages for Zipkin
-     */
     @Bean
     Reporter<Span> spanReporter(Sender sender) {
 

@@ -86,32 +86,41 @@ $ java -jar /path/zipkin-server.jar
 ----
 
 == Standing up the traced Application
-Generate  a new Spring application with the dependencies for Web and Lombok. Use this link to generate a http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[new project from the Spring Initializr (http://start.spring.io)]. We'll stand up a REST  API with two  endpoints. One endpoint will call the other. We'll use the Spring Framework `RestTemplate`  to make HTTP calls. 
+In this example, we will declare profiles for the back-ends (kafka, rabbit, zipkin/http) as the ingress for our trace reporting. We will then take on an application which exposes multiple services with HTTP and gRPC.  
 
-In this example, we will declare multiple back-ends (kafka, rabbit) as the ingress for our trace reporting. We will then take on an application which does expose multiple services with HTTP and gRPC.  
+Furthermore, we will organize the application into four modules (trace-configuration, http-server, grpc-server, grpc-client) in order to keep concerns separate.
 
-The application setup will be such that our tracing priroirites is submodule'd along with client and service.  Thus, there
-will be four modules: [trace-configuration, trace-grpc-client, trace-grpc-service, trace-http-server]. 
+Generate  a new Spring application with the dependencies for Web and Lombok. Use this link to generate a http://start.spring.io/starter.zip?dependencies=web,lombok,h2,jpa&type=maven-project&javaVersion=1.8&baseDir=spring-tracing&packageName=mcp.client&name=spring-tracing[new project from the Spring Initializr (http://start.spring.io)]. We'll stand up a HTTP/REST API and it's endpoints. One endpoint will call the other in the order [frontend->backend->delay]. We'll use the Spring Framework `RestTemplate`  to make HTTP calls. 
 
 .RestController.java
 [source,java]
 ----
+@Profile("http-web")
 @RestController
 public class TracingRestController {
-    private final RestTemplateBuilder restTemplatebuilder;
+    private final RestTemplate restTemplate;
+    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TracingRestController.class);
 
-    TracingRestController(RestTemplateBuilder restTemplatebuilder) {
-        this.restTemplatebuilder = restTemplatebuilder;
+    public TracingRestController(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
     @GetMapping("/backend")
-    public String backend() {
-        return "Greetings";
+    public String backend(@RequestHeader("client-id") String clientId) {
+        restTemplate.getForObject("http://localhost:8080/delay", String.class);
+        return "Greetings " + clientId;
+    }
+
+    @GetMapping("/delay")
+    public void addDelay() throws Exception {
+        long delay = ThreadLocalRandom.current().nextInt(1, 5);
+        TimeUnit.SECONDS.sleep(delay);
+        return;
     }
 
     @GetMapping("/frontend")
     public String frontend() {
-        return restTemplatebuilder.build()
+        return restTemplate
                 .getForObject("http://localhost:8080/backend", String.class);
     }
 }
@@ -189,16 +198,17 @@ but can help with testing: `Reporter.NOOP` and `Reporter.CONSOLE`.
 .ReportToZipkinConfiguration.java
 [source,java]
 ----
-@Profile("zipkin")
+@Profile("report-to-zipkin")
 @Configuration
 class TracingReportToZipkinConfiguration {
+
     @Bean
     Sender sender(@Value("${mcp.zipkin.url}") String zipkinSenderUrl) {
         return OkHttpSender.create(zipkinSenderUrl);
     }
 
     @Bean
-    AsyncReporter<Span> spanReporter(Sender sender) {
+    Reporter<Span> spanReporter(Sender sender) {
         return AsyncReporter.create(sender);
     }
 }
@@ -219,15 +229,17 @@ sender. Create a new configuration class and add it to the 'kafka' profile.
 .KafkaReportingConfiguration.java
 [source,java]
 ----
-@Profile("kafka")
+@Profile("report-to-kafka")
 @Configuration
 public class TracingReportToKafkaConfiguration {
+
     @Bean
     Sender sender(@Value("${mcp.kafka.url}") String kafkaUrl) throws IOException {
         return KafkaSender.create(kafkaUrl);
     }
+
     @Bean
-    AsyncReporter<Span> spanReporter(Sender sender) {
+    Reporter<Span> spanReporter(Sender sender) {
 
         return AsyncReporter.create(sender);
     }
@@ -245,7 +257,7 @@ is expected to consume.
 .RabbitMQReportingConfiguration.java
 [source,java]
 ----
-@Profile("rabbit")
+@Profile("report-to-rabbit")
 @Configuration
 public class TracingReportToRabbitConfiguration {
     @Bean
@@ -257,7 +269,7 @@ public class TracingReportToRabbitConfiguration {
     }
 
     @Bean
-    AsyncReporter<Span> spanReporter(Sender sender) {
+    Reporter<Span> spanReporter(Sender sender) {
         return AsyncReporter.create(sender);
     }
 }
@@ -332,8 +344,7 @@ $ curl -H "client-id: tracing" http://localhost:8080/frontend
 Greetings tracing%
 ----
 
-So, we know that our header data is propagating because our client-id header was propagated to the downstream service
-and is accessible. Lets take a look at the span graph.  You'll need to access
+Lets take a look at the span graph.  You'll need to access
 Zipkin webUI via `http://localhost:9411/zipkin/`:
 
 [#img-multiple-hop-span-graph]
@@ -459,7 +470,7 @@ There is already a pretty succinct document for tracing gRPC services on the
 http://github.com/openzipkin/grpc-sender[openzipkin grpc sender].
 
 Our grpc client will be used by another project (the web server) to access the gRPC greeting service.
-This client of course will have it's own module to keep the tutorial cogent.
+This client of course will have it's own module to separate concerns.
 
 .GrpcClient.java
 [source,java]
