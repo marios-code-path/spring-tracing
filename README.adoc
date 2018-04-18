@@ -453,14 +453,15 @@ public class TracingGrpcServerConfiguration {
 }
 ----
 
-The command to run this new service:
+The command to run this new service. We will run this application standalone since it shouldnt
+live in the same VM as the HTTP server. Therefore, in a new terminal:
 
 .grpcstart.sh
 [source,shell]
 ----
-~/code/trace-grpc-service $ mvn spring-boot:run -Dspring.profiles.active=grpc-web,report-to-zipkin
+~/projects/spring-tracing/trace-grpc-service $ mvn spring-boot:run -Dspring.profiles.active=grpc-web,report-to-zipkin
 ... logging ...
-....
+...
 ----
 
 Should this succeed, there will be a grpc server listening on default port `6565`.
@@ -503,7 +504,23 @@ public class GreetingClient {
 }
 ----
 
-For tracing to work on the client side, we must wire an `io.grpc.ManagedChannel` with an interceptor from our `grpcTracing` bean ( as with the server ).
+We need to change an endpoint in order to make use of the grpc client.
+Rather than make the new controller, we will need to modify the backend endpoint in our HTTP/REST controller:
+
+.TracingGrpcRestController.java
+[source,java]
+----
+    @GetMapping("/backend")
+    public String backend(HttpServletRequest req) {
+        String clientId = Optional
+                .ofNullable(req.getHeader("client-id"))
+                .orElse("none");
+
+        return greetingClient.greeting(clientId).getHello();
+    }
+----
+
+On the client side, we must wire an `io.grpc.ManagedChannel` with an interceptor from our `grpcTracing` bean ( as with the server ).
 
 .GrpcClientTraceConfiguration.java
 [source,java]
@@ -521,10 +538,13 @@ For tracing to work on the client side, we must wire an `io.grpc.ManagedChannel`
     }
 ----
 
-This completes the configuration for our Grpc tracing client.
+This completes the configuration for our Grpc service/client.
+
+Note: 
+Dont forget to restart the service so that the new grpc backend is exposed (port 8080).
 
 Now when we test `/frontend` and as a result of instrumenting all the endpoints.  
-You'll see a span graph:
+We can observe the span graph when viewing the Zipkin UI:
 
 [#img-span-graph]
 image::grpc-web-spans.png[grpc-spans]

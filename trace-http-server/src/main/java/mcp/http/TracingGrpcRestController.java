@@ -38,8 +38,7 @@ public class TracingGrpcRestController {
         String clientId = Optional
                 .ofNullable(req.getHeader("client-id"))
                 .orElse("none");
-
-        log.info("backend/client-id = " + clientId);
+        
         return greetingClient.greeting(clientId).getHello();
     }
 
