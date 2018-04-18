@@ -518,12 +518,17 @@ You'll see a span graph:
 [#img-span-graph]
 image::grpc-web-spans.png[grpc-spans]
 The final span graph shows us the route detail to our updated HTTP Rest 
-service.  Now, we can apply this capability to any of our microservices
-should we require tracability across services. *NEXT* implement with Spring-Integration!
+service.
 
 == Afterwords
+We can apply this capability to any of our (Java) microservices, but fear not!
+Zipkin is polyglot by nature and works with many other platforms. If you have pologlot concerns
+in your service paths, then check out any of the links in the next section.  
+Should we/ require tracability across services that are not bound to JVM, its good to know that 
+a multi-platform solution exists.
 
-Reading List:
+*NEXT* implement with Spring-Integration!
+=== Reading List
 
 * https://zipkin.io/pages/instrumenting.html
 * https://cloud.spring.io/spring-cloud-static/spring-cloud-sleuth/1.1.3.RELEASE/
