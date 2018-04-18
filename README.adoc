@@ -521,3 +521,39 @@ The final span graph shows us the route detail to our updated HTTP Rest
 service.  Now, we can apply this capability to any of our microservices
 should we require tracability across services. *NEXT* implement with Spring-Integration!
 
+== Afterwords
+
+Reading List:
+
+* https://zipkin.io/pages/instrumenting.html
+* https://cloud.spring.io/spring-cloud-static/spring-cloud-sleuth/1.1.3.RELEASE/
+* B3-propigation
+** https://github.com/openzipkin/b3-propagation
+
+* Context propagation/Brave-slf4j
+** https://github.com/openzipkin/brave/tree/master/context/slf4j
+* Tracing JDBC:
+** https://github.com/openzipkin/brave/issues/201
+* Zipkin Reporting (Java):
+** https://github.com/openzipkin/zipkin-reporter-java
+* Kafka:
+** https://kafka.apache.org/quickstart
+* Using OpenZipkin Brave:
+** https://cwiki.apache.org/confluence/display/CXF20DOC/Using+OpenZipkin+Brave
+* p6spy(jdbc):
+** https://github.com/openzipkin/brave/tree/master/instrumentation/p6spy
+
+
+* Instrumenting in JS land:
+** https://google.github.io/tracing-framework/instrumenting-code.html
+** https://github.com/openzipkin/zipkin-js
+** https://github.com/RisingStack/trace-nodejs
+* Capgemini-trace-example:
+** https://github.com/Capgemini/spring-boot-capgemini/tree/master/examples/spring-capgemini-trace-sample
+
+* Sleuth:
+** https://cloud.spring.io/spring-cloud-sleuth/single/spring-cloud-sleuth.html
+
+* StackDriver Trace:
+** https://cloud.google.com/trace/
+
